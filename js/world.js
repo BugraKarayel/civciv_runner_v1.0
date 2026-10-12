@@ -2,6 +2,7 @@ import { CONFIG } from './config.js';
 import { SKY_GROUND, SKY_FLIGHT, GROUND_STRIP, GROUND_TOP, GROUND_TILE, CLOUD_SPRITES } from './sprites.js';
 import { StateMachine, States } from './state.js';
 import { ObstacleManager } from './obstacles.js';
+import { GROUND_PALETTE } from './palette.js';
 
 class Cloud {
   constructor() {
@@ -107,7 +108,7 @@ export const World = {
           // İniş zemininin kenarına dikey sınır çizgisi ve çim detayı
           ctx.fillStyle = '#29170a';
           ctx.fillRect(gx, GROUND_TOP, 4, CONFIG.CANVAS_HEIGHT - GROUND_TOP);
-          ctx.fillStyle = '#16a34a';
+          ctx.fillStyle = GROUND_PALETTE.grassMain;
           ctx.fillRect(gx, GROUND_TOP, 4, 6);
           ctx.restore();
         }

@@ -3,6 +3,8 @@ import { SPRITES, TOWER_TILE, TOWER_W, RAMP_W, RAMP_H, RAMP_SPRITE, LABELS, draw
 import { StateMachine, States } from './state.js';
 import { Score } from './score.js';
 import { sounds } from './audio.js';
+import { PaletteManager } from './palette.js';
+import { GodMode } from './godmode.js';
 
 export function checkAABB(a, b) {
   return a.x < b.x + b.width && a.x + a.width > b.x &&
@@ -321,7 +323,7 @@ export const ObstacleManager = {
     for (let i = 0; i < this.obstacles.length; i++) {
       const o = this.obstacles[i];
       o.update(dist);
-      if (o.collidesWith(pBox) && player.invulnerableTime <= 0) {
+      if (o.collidesWith(pBox) && player.invulnerableTime <= 0 && !GodMode.active) {
         this.lastDeathReason = 'obstacle';
         StateMachine.change(States.GAMEOVER);
         sounds.hit();
@@ -433,9 +435,9 @@ export const ObstacleManager = {
     this.particles.push({ x, y, vx, vy, size, alpha: 1, color });
   },
   createSparks(x, y) {
-    const cols = ['#EA4335', '#FBBC04', '#4285F4', '#34A853'];
-    for (let i = 0; i < 10; i++) {
-      this.pushParticle(x, y, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, 3, cols[(Math.random() * 4) | 0]);
+    const cols = PaletteManager.sparks;
+    for (let i = 0; i < 12; i++) {
+      this.pushParticle(x, y, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, 3, cols[(Math.random() * cols.length) | 0]);
     }
   },
   clearSkyPhase() {

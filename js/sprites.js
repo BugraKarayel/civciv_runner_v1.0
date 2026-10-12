@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import { GROUND_PALETTE } from './palette.js';
 
 export function makeCanvas(w, h) {
   const c = document.createElement('canvas');
@@ -65,10 +66,10 @@ const CHICK_ROWS = {
   dead: ["......CC........","....ccccCC......","...LLLLLL.......","..LLLLLLLL..b...","..LLLLLxxLE.BB..","..LLLLxxLE.BBB..","..YYYYKKYY.BBB..",".YYYYYYYYYY.....",".WWWWYYYYYYSS...",".wWWWWYYYYYSSS..","..WWWSSSSSSSSS..","..SSSSSSSSSSS...","....F...F.......","...FFF.FFF......"],
 };
 
-const ROCK_PALETTE = { '.': '#1c1917', 'L': '#9ca3af', 'M': '#6b7280', 'D': '#374151', 'G': '#84cc16', 'g': '#4d7c0f' };
+const ROCK_PALETTE = { '.': '#1c1917', 'L': '#9ca3af', 'M': '#6b7280', 'D': '#374151', 'G': GROUND_PALETTE.grassLight, 'g': GROUND_PALETTE.grassDark };
 const ROCK_ROWS = ["....GG......","...GgGg.....","..LLLLLM....",".LLLLLLMM...",".LLLLMMMMM..","LLMMMMMMMDD.","LMMDMMMMDDDD","LMMMDMMMDDDD",".MMMDDDDDDD."];
 
-const CACTUS_PALETTE = { '.': '#143615', 'L': '#84cc16', 'M': '#4d7c0f', 'D': '#1e4a1e', 'R': '#ef4444', 'Y': '#fde047' };
+const CACTUS_PALETTE = { '.': '#143615', 'L': GROUND_PALETTE.grassLight, 'M': GROUND_PALETTE.grassMain, 'D': GROUND_PALETTE.grassDark, 'R': GROUND_PALETTE.flowerPetal, 'Y': GROUND_PALETTE.flowerCenter };
 const CACTUS_ROWS = ["....RYR.....","....RRR.....","....MMM.....","....LMM.....","..L.LMM.....",".LL.LMM.LL..",".LL.LMM.LM..",".LM.LMM.MM..","..MMLMMMM...","...LLMMM....","...LLMMD....","...LLMMD....","...LLMMD....","...LLMMD....","...DDDDD....","............"];
 
 const SEED_PALETTE = { '.': '#713f12', 'Y': '#fde047', 'L': '#fef08a', 'O': '#f59e0b', 'S': '#d97706' };
@@ -113,25 +114,25 @@ export const GROUND_STRIP = (() => {
   const [c, g] = makeCanvas(CONFIG.CANVAS_WIDTH + GROUND_TILE, CONFIG.CANVAS_HEIGHT - GROUND_TOP);
   const oy = CONFIG.GROUND_Y - GROUND_TOP; 
   const W = c.width;
-  g.fillStyle = '#65a30d'; g.fillRect(0, oy, W, 8);
-  g.fillStyle = '#84cc16'; g.fillRect(0, oy, W, 3);
-  g.fillStyle = '#365314'; g.fillRect(0, oy + 8, W, 3);
-  g.fillStyle = '#78350f'; g.fillRect(0, oy + 11, W, c.height);
-  g.fillStyle = '#5c2a0b'; g.fillRect(0, oy + 36, W, 3);
-  g.fillStyle = '#451a03'; g.fillRect(0, oy + 39, W, c.height);
+  g.fillStyle = GROUND_PALETTE.grassMain; g.fillRect(0, oy, W, 8);
+  g.fillStyle = GROUND_PALETTE.grassLight; g.fillRect(0, oy, W, 3);
+  g.fillStyle = GROUND_PALETTE.grassDark; g.fillRect(0, oy + 8, W, 3);
+  g.fillStyle = GROUND_PALETTE.dirtLight; g.fillRect(0, oy + 11, W, c.height);
+  g.fillStyle = GROUND_PALETTE.dirtMid; g.fillRect(0, oy + 36, W, 3);
+  g.fillStyle = GROUND_PALETTE.dirtDark; g.fillRect(0, oy + 39, W, c.height);
   for (let x = 0; x < W; x += 16) {
-    g.fillStyle = '#84cc16'; g.fillRect(x + 2, oy - 3, 3, 3); g.fillRect(x + 11, oy - 6, 3, 6);
-    g.fillStyle = '#65a30d'; g.fillRect(x + 8, oy - 3, 3, 3);
+    g.fillStyle = GROUND_PALETTE.grassLight; g.fillRect(x + 2, oy - 3, 3, 3); g.fillRect(x + 11, oy - 6, 3, 6);
+    g.fillStyle = GROUND_PALETTE.grassMain; g.fillRect(x + 8, oy - 3, 3, 3);
   }
   for (let x = 0; x < W; x += 32) {
     g.fillStyle = '#9ca3af'; g.fillRect(x + 6, oy + 18, 6, 3);
     g.fillStyle = '#4b5563'; g.fillRect(x + 9, oy + 21, 6, 3);
-    g.fillStyle = '#5c2a0b'; g.fillRect(x + 22, oy + 27, 6, 3);
+    g.fillStyle = GROUND_PALETTE.dirtMid; g.fillRect(x + 22, oy + 27, 6, 3);
     g.fillStyle = '#2f1203'; g.fillRect(x + 14, oy + 51, 9, 3);
   }
   for (let x = 0; x < W; x += GROUND_TILE) {
-    g.fillStyle = '#f472b6'; g.fillRect(x + 40, oy - 6, 3, 3);
-    g.fillStyle = '#fde047'; g.fillRect(x + 40, oy - 3, 3, 3);
+    g.fillStyle = GROUND_PALETTE.flowerPetal; g.fillRect(x + 40, oy - 6, 3, 3);
+    g.fillStyle = GROUND_PALETTE.flowerCenter; g.fillRect(x + 40, oy - 3, 3, 3);
   }
   return c;
 })();

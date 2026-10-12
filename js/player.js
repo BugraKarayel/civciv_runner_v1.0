@@ -5,6 +5,8 @@ import { sounds } from './audio.js';
 import { ObstacleManager } from './obstacles.js';
 import { World } from './world.js';
 import { Konami } from './konami.js';
+import { PaletteManager } from './palette.js';
+import { GodMode } from './godmode.js';
 
 export class Player {
   constructor() {
@@ -64,7 +66,10 @@ export class Player {
 
       // Boşluğa düşüp ekranın altına ulaşırsa GAMEOVER!
       if (!this.isGrounded && (this.y + this.height >= CONFIG.CANVAS_HEIGHT || this.y > CONFIG.CANVAS_HEIGHT)) {
-        if (StateMachine.current !== States.GAMEOVER) {
+        if (GodMode.active) {
+          this.y = CONFIG.CANVAS_HEIGHT - this.height - 4;
+          this.vy = CONFIG.JUMP_VELOCITY * 0.75;
+        } else if (StateMachine.current !== States.GAMEOVER) {
           ObstacleManager.lastDeathReason = 'pit';
           StateMachine.change(States.GAMEOVER);
           sounds.hit();
@@ -95,7 +100,10 @@ export class Player {
       // Hava modunda boşluğa düşmek (flappy mantığı) doğrudan Game Over'dır!
       // Kalkıştan arta kalan zemin parçası katı değildir; civciv ekranın altına ulaştığı anda ölür.
       if (!this.isGrounded && this.y + this.height >= CONFIG.CANVAS_HEIGHT) {
-        if (StateMachine.current !== States.GAMEOVER) {
+        if (GodMode.active) {
+          this.y = CONFIG.CANVAS_HEIGHT - this.height - 4;
+          this.vy = CONFIG.FLAP_VELOCITY * 1.2;
+        } else if (StateMachine.current !== States.GAMEOVER) {
           ObstacleManager.lastDeathReason = 'pit';
           StateMachine.change(States.GAMEOVER);
           sounds.hit();
@@ -114,15 +122,17 @@ export class Player {
 
   // Konami easter egg: rainbow trail (cosmetic only)
   drawRainbowTrail(ctx, tick) {
-    const cols = ['#ef4444', '#f97316', '#facc15', '#22c55e', '#3b82f6', '#a855f7'];
+    const cols = PaletteManager.rainbow;
     const cy = Math.round(this.y + this.height / 2);
+    const count = cols.length;
+    const stripeH = Math.max(2, Math.floor(18 / count));
     for (let i = 0; i < 12; i++) {
       const x = Math.round(this.x - 6 - i * 7);
       const wave = Math.round(Math.sin(tick * 0.25 + i * 0.6) * 4);
       ctx.globalAlpha = 1 - i / 14;
-      for (let b = 0; b < cols.length; b++) {
+      for (let b = 0; b < count; b++) {
         ctx.fillStyle = cols[b];
-        ctx.fillRect(x, cy - 9 + b * 3 + wave, 6, 3);
+        ctx.fillRect(x, cy - 9 + b * stripeH + wave, 6, stripeH);
       }
     }
     ctx.globalAlpha = 1;
@@ -135,6 +145,21 @@ export class Player {
     }
     
     if (Konami.active && StateMachine.current !== States.GAMEOVER) this.drawRainbowTrail(ctx, tick);
+
+    // God Mode: kuşa altın ilahi hale (halo) ve parıltı ekle
+    if (GodMode.active && StateMachine.current !== States.GAMEOVER) {
+      ctx.save();
+      const hx = Math.round(this.x + this.width / 2);
+      const hy = Math.round(this.y - 7);
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.ellipse(hx, hy, 12, 3.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(250, 204, 21, 0.4)';
+      ctx.fill();
+      ctx.restore();
+    }
     const sprite = this.getSprite(tick);
     const sw = sprite.width * this.scale;
     const sh = sprite.height * this.scale;

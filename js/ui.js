@@ -6,6 +6,8 @@ import { Score } from './score.js';
 import { Input } from './input.js';
 import { ProfanityFilter } from './filter.js';
 import { ObstacleManager } from './obstacles.js';
+import { PaletteManager } from './palette.js';
+import { GodMode } from './godmode.js';
 
 export const UI = {
   nameInputBuffer: "",
@@ -34,6 +36,43 @@ export const UI = {
     } else {
       this.drawHUD(ctx, width, height);
     }
+
+    if (StateMachine.current !== States.ENTER_NAME) {
+      this.drawPaletteButton(ctx, width);
+      GodMode.drawBadge(ctx, width);
+    }
+    PaletteManager.drawToast(ctx, width, height);
+    GodMode.drawToast(ctx, width, height);
+  },
+
+  drawPaletteButton(ctx, w) {
+    const pw = 156, ph = 24, px = w - pw - 12, py = 12;
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+    ctx.fillRect(px, py, pw, ph);
+    ctx.strokeStyle = PaletteManager.current.rainbow[0];
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(px, py, pw, ph);
+
+    ctx.font = '9px "Press Start 2P", monospace';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('P: ' + PaletteManager.current.id + '/4', px + 8, py + ph / 2);
+
+    const cols = PaletteManager.rainbow;
+    const dotW = Math.max(4, Math.floor(66 / cols.length));
+    const sx = px + 80;
+    for (let i = 0; i < cols.length; i++) {
+      ctx.fillStyle = cols[i];
+      ctx.fillRect(sx + i * (dotW + 2), py + 6, dotW, ph - 12);
+    }
+    ctx.restore();
+  },
+
+  isPaletteButtonClicked(canvasX, canvasY, w) {
+    const pw = 156, ph = 24, px = w - pw - 12, py = 12;
+    return canvasX >= px && canvasX <= px + pw && canvasY >= py && canvasY <= py + ph;
   },
 
   drawHUD(ctx, w, h) {
@@ -118,19 +157,24 @@ export const UI = {
     const now = performance.now();
     ctx.textAlign = 'center';
     if (Konami.isFlashing(now)) {
-      const cols = ['#ef4444', '#f97316', '#facc15', '#22c55e', '#3b82f6', '#a855f7'];
+      const cols = PaletteManager.rainbow;
       ctx.font = '16px "Press Start 2P", monospace';
       ctx.fillStyle = cols[Math.floor(now / 120) % cols.length];
       ctx.fillText(Konami.active ? '* KONAMI MODU AÇIK! *' : 'KONAMI MODU KAPALI', w / 2, h - 90);
     } else if (Konami.active) {
+      const cols = PaletteManager.rainbow;
       ctx.font = '10px "Press Start 2P", monospace';
-      ctx.fillStyle = '#facc15';
+      ctx.fillStyle = cols[Math.floor(now / 160) % cols.length];
       ctx.fillText('* KONAMI MODU *', w / 2, h - 90);
     }
 
     ctx.font = '13px "Press Start 2P", monospace';
     ctx.fillStyle = Math.floor(now / 500) % 2 === 0 ? '#ff5555' : 'white';
     ctx.fillText('BAŞLAMAK İÇİN TIKLA VEYA SPACE', w / 2, h - 50);
+
+    ctx.font = '9px "Press Start 2P", monospace';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText('[P / 1-4] PALET • [Ctrl+G] GOD MODE', w / 2, h - 22);
   },
 
   drawTutorial(ctx, w, h) {
@@ -243,10 +287,14 @@ export const UI = {
 
     // Alt Mesajlar
     ctx.textAlign = 'center';
-    const isTop = Leaderboard.isTop10(Score.value);
+    const isTop = !GodMode.usedInRun && Leaderboard.isTop10(Score.value);
     const bottomY = boxY + boxH + 36;
     
-    if (isTop) {
+    if (GodMode.usedInRun) {
+      ctx.font = '10px "Press Start 2P", monospace';
+      ctx.fillStyle = '#f87171';
+      ctx.fillText('⚡ GOD MODE KULLANILDI - SKOR TABLOSU DEVRE DIŞI ⚡', w / 2, bottomY - 6);
+    } else if (isTop) {
       const flash = Math.floor(performance.now() / 400) % 2 === 0;
       ctx.font = '13px "Press Start 2P", monospace';
       ctx.fillStyle = flash ? '#fde047' : '#f59e0b';
@@ -255,7 +303,7 @@ export const UI = {
 
     ctx.font = '12px "Press Start 2P", monospace';
     ctx.fillStyle = Math.floor(performance.now() / 500) % 2 === 0 ? '#ffffff' : '#94a3b8';
-    ctx.fillText('DEVAM ETMEK İÇİN SPACE / TIKLA', w / 2, bottomY + (isTop ? 34 : 14));
+    ctx.fillText('DEVAM ETMEK İÇİN SPACE / TIKLA', w / 2, bottomY + (isTop || GodMode.usedInRun ? 34 : 14));
   },
 
   drawEnterName(ctx, w, h) {
@@ -344,6 +392,16 @@ export const UI = {
   },
 
   submitName() {
+    if (GodMode.usedInRun) {
+      this.nameInputBuffer = '';
+      if (this.nameField) {
+        this.nameField.value = '';
+        this.nameField.blur();
+      }
+      StateMachine.change(States.IDLE);
+      return;
+    }
+
     const rawName = this.nameInputBuffer.trim();
     const cleanName = ProfanityFilter.sanitize(rawName);
 

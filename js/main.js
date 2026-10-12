@@ -9,6 +9,8 @@ import { Score } from './score.js';
 import { Leaderboard } from './leaderboard.js';
 import { UI } from './ui.js';
 import { Konami } from './konami.js';
+import { PaletteManager } from './palette.js';
+import { GodMode } from './godmode.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d', { alpha: false });
@@ -26,11 +28,47 @@ sounds.init();
 World.init();
 ObstacleManager.init();
 
+// Kısayollar: Ctrl+G (God Mode), 'P' veya 1-4 (Palet)
+window.addEventListener('keydown', (e) => {
+  // Ctrl + G / Cmd + G: God Mode Toggle
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G')) {
+    e.preventDefault();
+    GodMode.toggle();
+    sounds.milestone && sounds.milestone();
+    return;
+  }
+
+  if (StateMachine.current === States.ENTER_NAME) return;
+  if (e.key === 'p' || e.key === 'P') {
+    PaletteManager.nextPalette();
+    sounds.milestone && sounds.milestone();
+  } else if (e.key >= '1' && e.key <= '4') {
+    PaletteManager.setPalette(parseInt(e.key, 10));
+    sounds.milestone && sounds.milestone();
+  }
+});
+
+// Canvas üzerindeki palet butonuna tıklama / dokunma (zıplamayı tetiklemez)
+canvas.addEventListener('pointerdown', (e) => {
+  if (StateMachine.current === States.ENTER_NAME) return;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = CONFIG.CANVAS_WIDTH / rect.width;
+  const scaleY = CONFIG.CANVAS_HEIGHT / rect.height;
+  const cx = (e.clientX - rect.left) * scaleX;
+  const cy = (e.clientY - rect.top) * scaleY;
+  if (UI.isPaletteButtonClicked(cx, cy, CONFIG.CANVAS_WIDTH)) {
+    PaletteManager.nextPalette();
+    sounds.milestone && sounds.milestone();
+    e.stopPropagation();
+  }
+}, true);
+
 function resetGame() {
   player.reset();
   World.init();
   ObstacleManager.init();
   Score.reset();
+  GodMode.resetRun();
   tick = 0;
   flyTimer = 0;
 }
@@ -57,6 +95,8 @@ function triggerFly() {
 function step(dt, now) {
   tick += dt;
   StateMachine.update(dt * (1000/60)); // ms
+  PaletteManager.update(dt * (1000/60));
+  GodMode.update(dt * (1000/60));
   
   if (StateMachine.checkIdleTimeout(now)) {
     // If it reverted to IDLE due to timeout
@@ -117,7 +157,7 @@ function step(dt, now) {
     player.update(dt);
     if (StateMachine.timeInState > CONFIG.GAMEOVER_LOCK) {
       if (Input.actionJustPressed) {
-        if (Leaderboard.isTop10(Score.value)) {
+        if (!GodMode.usedInRun && Leaderboard.isTop10(Score.value)) {
           StateMachine.change(States.ENTER_NAME);
           UI.beginNameEntry();
         } else {
