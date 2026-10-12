@@ -9,7 +9,7 @@ export const Input = {
   init() {
     const handleDown = () => {
       StateMachine.registerInput();
-      if (!this.actionPressed) this.actionJustPressed = true;
+      this.actionJustPressed = true;
       this.actionPressed = true;
     };
     

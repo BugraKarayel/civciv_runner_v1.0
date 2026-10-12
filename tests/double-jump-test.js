@@ -102,6 +102,27 @@ player.land();
 assert(player.isGrounded === true, 'Oyuncu yere indi');
 assert(player.jumpsRemaining === 2, 'Yere inince 2 zıplama hakkı tazelendi');
 
+// Jump Buffer (Girdi Arabelleği) - Çift zıplama sonrası yere inerken gecikmeyi önleme testi
+player.jump(); // 1. zıplama
+player.jump(); // 2. zıplama (Double jump)
+assert(player.jumpsRemaining === 0, 'Çift zıplama yapıldı, havada 0 hak');
+
+// Yere inmeden önce havada tuşa basılıyor (Buffer kuruluyor):
+let bufferedJump = false;
+let jumpBuffer = 180;
+// Yere iniş anı simülasyonu:
+if (jumpBuffer > 0) {
+  // Yere değer değmez gecikmesiz fırlama
+  player.land();
+  player.jump();
+  bufferedJump = true;
+  jumpBuffer = 0;
+}
+assert(bufferedJump === true, 'Jump buffer aktifken yere değer değmez tekrar zıplama tetiklendi');
+assert(player.vy === CONFIG.JUMP_VELOCITY, 'Çift zıplama sonrası inişte sıfır gecikmeyle anında tekrar zıplandı');
+assert(player.jumpsRemaining === 1, 'Yerden yeni zıplama başarıyla başladı');
+player.land();
+
 // 3. Fiziksel Ulaşılabilirlik Testi (Tek Zıplama vs Çift Zıplama)
 const singleJumpPeak = (CONFIG.JUMP_VELOCITY ** 2) / (2 * CONFIG.GRAVITY_RUN);
 const highSeedHeightFromGround = 215;

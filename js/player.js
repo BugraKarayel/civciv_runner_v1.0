@@ -25,45 +25,65 @@ export class Player {
     this.rotation = 0;
     this.isDead = false;
     this.invulnerableTime = 0;
+    this.jumpBuffer = 0;
   }
 
   jump() {
     if (this.isDead) return;
 
-    if (StateMachine.current === States.RUN || StateMachine.current === States.TUTORIAL) {
-      if (this.isGrounded) {
-        this.vy = CONFIG.JUMP_VELOCITY;
-        this.isGrounded = false;
-        this.jumpsRemaining = 1;
-        sounds.jump();
-      } else if (this.jumpsRemaining > 0) {
-        // Double Jump (havada 2. zıplama)
-        this.vy = CONFIG.DOUBLE_JUMP_VELOCITY;
-        this.jumpsRemaining = 0;
-        this.rotation = -0.22;
-        sounds.flap();
-        // Ayakların altında hafif puf parçacıkları
-        for (let i = 0; i < 5; i++) {
-          ObstacleManager.pushParticle(
-            this.x + this.width * 0.35 + (Math.random() - 0.5) * 14,
-            this.y + this.height - 2,
-            (Math.random() - 0.5) * 3,
-            Math.random() * 2 + 1,
-            Math.floor(Math.random() * 3 + 3),
-            '#ffffff'
-          );
-        }
-      }
-    } else if (StateMachine.current === States.FLY) {
+    if (StateMachine.current === States.FLY) {
       this.vy = CONFIG.FLAP_VELOCITY;
       this.rotation = -0.3;
       sounds.flap();
+      return;
     }
+
+    if (StateMachine.current === States.RUN || StateMachine.current === States.TUTORIAL) {
+      this.jumpBuffer = 180; // 180ms jump buffer: Yere inmeden önce basılan zıplamaları saklar
+      this.tryJump();
+    }
+  }
+
+  tryJump() {
+    if (this.isDead) return false;
+    if (StateMachine.current !== States.RUN && StateMachine.current !== States.TUTORIAL) return false;
+
+    if (this.isGrounded) {
+      this.vy = CONFIG.JUMP_VELOCITY;
+      this.isGrounded = false;
+      this.jumpsRemaining = 1;
+      this.jumpBuffer = 0;
+      sounds.jump();
+      return true;
+    } else if (this.jumpsRemaining > 0) {
+      // Double Jump (havada 2. zıplama)
+      this.vy = CONFIG.DOUBLE_JUMP_VELOCITY;
+      this.jumpsRemaining = 0;
+      this.jumpBuffer = 0;
+      this.rotation = -0.22;
+      sounds.flap();
+      // Ayakların altında hafif puf parçacıkları
+      for (let i = 0; i < 5; i++) {
+        ObstacleManager.pushParticle(
+          this.x + this.width * 0.35 + (Math.random() - 0.5) * 14,
+          this.y + this.height - 2,
+          (Math.random() - 0.5) * 3,
+          Math.random() * 2 + 1,
+          Math.floor(Math.random() * 3 + 3),
+          '#ffffff'
+        );
+      }
+      return true;
+    }
+    return false;
   }
 
   update(dt) {
     if (this.invulnerableTime > 0) {
       this.invulnerableTime -= dt * (1000/60);
+    }
+    if (this.jumpBuffer > 0) {
+      this.jumpBuffer = Math.max(0, this.jumpBuffer - dt * (1000/60));
     }
 
     if (StateMachine.current === States.RUN || StateMachine.current === States.GAMEOVER || StateMachine.current === States.TUTORIAL) {
@@ -79,6 +99,11 @@ export class Player {
         this.isGrounded = true;
         this.jumpsRemaining = 2;
         this.rotation = 0;
+
+        // Çift zıplama sonrası yere inerken basılan zıplamayı sıfır gecikmeyle anında tetikle
+        if (this.jumpBuffer > 0) {
+          this.tryJump();
+        }
       } else {
         this.isGrounded = false;
         this.rotation = Math.min(0.35, this.vy * 0.02);
@@ -108,6 +133,9 @@ export class Player {
           this.isGrounded = true;
           this.jumpsRemaining = 2;
           this.rotation = 0;
+          if (this.jumpBuffer > 0) {
+            this.tryJump();
+          }
         }
       }
 
