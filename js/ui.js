@@ -12,7 +12,11 @@ import { GodMode } from './godmode.js';
 export const UI = {
   nameInputBuffer: "",
   isProfane: false,
-  hudKey: '',
+  lastVal: -1,
+  lastSeeds: -1,
+  lastMeters: -1,
+  lastSecs: -1,
+  lastMult: -1,
   cachedTimeText: 'SURE 00:00',
   cachedMultText: 'x1.0',
   cachedNetScoreText: "NET SKOR: 0",
@@ -38,41 +42,10 @@ export const UI = {
     }
 
     if (StateMachine.current !== States.ENTER_NAME) {
-      this.drawPaletteButton(ctx, width);
       GodMode.drawBadge(ctx, width);
     }
     PaletteManager.drawToast(ctx, width, height);
     GodMode.drawToast(ctx, width, height);
-  },
-
-  drawPaletteButton(ctx, w) {
-    const pw = 156, ph = 24, px = w - pw - 12, py = 12;
-    ctx.save();
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
-    ctx.fillRect(px, py, pw, ph);
-    ctx.strokeStyle = PaletteManager.current.rainbow[0];
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(px, py, pw, ph);
-
-    ctx.font = '9px "Press Start 2P", monospace';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('P: ' + PaletteManager.current.id + '/4', px + 8, py + ph / 2);
-
-    const cols = PaletteManager.rainbow;
-    const dotW = Math.max(4, Math.floor(66 / cols.length));
-    const sx = px + 80;
-    for (let i = 0; i < cols.length; i++) {
-      ctx.fillStyle = cols[i];
-      ctx.fillRect(sx + i * (dotW + 2), py + 6, dotW, ph - 12);
-    }
-    ctx.restore();
-  },
-
-  isPaletteButtonClicked(canvasX, canvasY, w) {
-    const pw = 156, ph = 24, px = w - pw - 12, py = 12;
-    return canvasX >= px && canvasX <= px + pw && canvasY >= py && canvasY <= py + ph;
   },
 
   drawHUD(ctx, w, h) {
@@ -81,9 +54,12 @@ export const UI = {
     const meters = Score.meters;
     const secs = Score.timeSeconds;
     const mult = Math.round(Score.multiplier * 10);
-    const key = value + '|' + seeds + '|' + meters + '|' + secs + '|' + mult;
-    if (key !== this.hudKey) {
-      this.hudKey = key;
+    if (value !== this.lastVal || seeds !== this.lastSeeds || meters !== this.lastMeters || secs !== this.lastSecs || mult !== this.lastMult) {
+      this.lastVal = value;
+      this.lastSeeds = seeds;
+      this.lastMeters = meters;
+      this.lastSecs = secs;
+      this.lastMult = mult;
       this.cachedNetScoreText = 'NET SKOR: ' + value;
       this.cachedDistText = 'MESAFE: ' + meters + 'm';
       this.cachedSeedText = 'TOHUM: ' + seeds + ' (+' + Score.seedScore + ')';

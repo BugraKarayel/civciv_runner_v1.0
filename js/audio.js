@@ -34,6 +34,12 @@ export class SoundManager {
       gain.gain.exponentialRampToValueAtTime(0.01, t + duration);
       osc.connect(gain);
       gain.connect(this.ctx.destination);
+      osc.onended = () => {
+        try {
+          osc.disconnect();
+          gain.disconnect();
+        } catch (e) {}
+      };
       osc.start(t);
       osc.stop(t + duration);
     } catch (e) {

@@ -177,6 +177,17 @@ export class Seed {
 
 export const INITIAL_SKY_DISTANCE = CONFIG.FLY_PIPE_SPACING_MIN;
 
+// Sıfır Bellek Tahsisi (Zero-Allocation) Nesne Havuzları
+const MAX_PARTICLES = 45;
+const PARTICLE_POOL = Array.from({ length: MAX_PARTICLES }, () => ({
+  x: 0, y: 0, vx: 0, vy: 0, size: 0, alpha: 0, color: '#ffffff'
+}));
+
+const MAX_FLOATING_TEXTS = 12;
+const FLOATING_TEXT_POOL = Array.from({ length: MAX_FLOATING_TEXTS }, () => ({
+  text: '', x: 0, y: 0, vy: -1.6, alpha: 0, color: '#fde047'
+}));
+
 export const ObstacleManager = {
   obstacles: [],
   ramps: [],
@@ -454,22 +465,36 @@ export const ObstacleManager = {
   },
 
   addFloatingText(text, x, y, color = '#fde047') {
-    if (this.floatingTexts.length >= 15) {
-      this.floatingTexts.shift();
+    let ft;
+    if (this.floatingTexts.length >= MAX_FLOATING_TEXTS) {
+      ft = this.floatingTexts[0];
+      for (let i = 1; i < this.floatingTexts.length; i++) {
+        this.floatingTexts[i - 1] = this.floatingTexts[i];
+      }
+      this.floatingTexts[this.floatingTexts.length - 1] = ft;
+    } else {
+      ft = FLOATING_TEXT_POOL[this.floatingTexts.length];
+      this.floatingTexts.push(ft);
     }
-    this.floatingTexts.push({
-      text,
-      x: Math.round(x),
-      y: Math.round(y),
-      vy: -1.6,
-      alpha: 1.0,
-      color
-    });
+    ft.text = text;
+    ft.x = Math.round(x);
+    ft.y = Math.round(y);
+    ft.vy = -1.6;
+    ft.alpha = 1.0;
+    ft.color = color;
   },
 
   pushParticle(x, y, vx, vy, size, color) {
-    if (this.particles.length >= 40) return;
-    this.particles.push({ x, y, vx, vy, size, alpha: 1, color });
+    if (this.particles.length >= MAX_PARTICLES) return;
+    const p = PARTICLE_POOL[this.particles.length];
+    p.x = x;
+    p.y = y;
+    p.vx = vx;
+    p.vy = vy;
+    p.size = size;
+    p.alpha = 1;
+    p.color = color;
+    this.particles.push(p);
   },
   createSparks(x, y) {
     const cols = PaletteManager.sparks;

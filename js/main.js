@@ -48,21 +48,6 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// Canvas üzerindeki palet butonuna tıklama / dokunma (zıplamayı tetiklemez)
-canvas.addEventListener('pointerdown', (e) => {
-  if (StateMachine.current === States.ENTER_NAME) return;
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = CONFIG.CANVAS_WIDTH / rect.width;
-  const scaleY = CONFIG.CANVAS_HEIGHT / rect.height;
-  const cx = (e.clientX - rect.left) * scaleX;
-  const cy = (e.clientY - rect.top) * scaleY;
-  if (UI.isPaletteButtonClicked(cx, cy, CONFIG.CANVAS_WIDTH)) {
-    PaletteManager.nextPalette();
-    sounds.milestone && sounds.milestone();
-    e.stopPropagation();
-  }
-}, true);
-
 function resetGame() {
   player.reset();
   World.init();
@@ -181,44 +166,61 @@ function render() {
   UI.draw(ctx, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
 }
 
-// VSync-Quantized Delta: Windows/Chromium zamanlayıcı titremesini (timer jitter) sıfırlar.
-// 60Hz monitörlerde Windows DWM zamanlayıcı sapması (~±2.5ms) geniş toleransla tam 16.67ms'ye kilitlenir.
-const VSYNC_CONFIGS = [
-  { interval: 1000 / 240, tol: 0.9, doubleTol: 1.5 }, // 240 Hz (~4.17 ms)
-  { interval: 1000 / 165, tol: 0.75, doubleTol: 1.4 }, // 165 Hz (~6.06 ms)
-  { interval: 1000 / 144, tol: 0.75, doubleTol: 1.4 }, // 144 Hz (~6.94 ms)
-  { interval: 1000 / 120, tol: 1.1, doubleTol: 2.0 }, // 120 Hz (~8.33 ms)
-  { interval: 1000 / 90,  tol: 1.5, doubleTol: 2.5 }, // 90 Hz  (~11.11 ms)
-  { interval: 1000 / 75,  tol: 1.8, doubleTol: 3.0 }, // 75 Hz  (~13.33 ms)
-  { interval: 1000 / 60,  tol: 2.8, doubleTol: 4.5 }, // 60 Hz  (~16.67 ms) - 13.8ms-19.5ms arası tam kilit!
-  { interval: 1000 / 50,  tol: 2.5, doubleTol: 4.0 }, // 50 Hz  (~20.00 ms)
+// Donanım Yenileme Hızı (165Hz / 144Hz / 240Hz / 60Hz) Titreşimsiz Kilitlenme Motoru
+const VSYNC_PRESETS = [
+  { hz: 240, interval: 1000 / 240 },
+  { hz: 165, interval: 1000 / 165 },
+  { hz: 144, interval: 1000 / 144 },
+  { hz: 120, interval: 1000 / 120 },
+  { hz: 90,  interval: 1000 / 90  },
+  { hz: 75,  interval: 1000 / 75  },
+  { hz: 60,  interval: 1000 / 60  },
 ];
 
 let lastTime = 0;
-let smoothDelta = 1000 / 60;
+let lockedInterval = null;
+let warmSamples = [];
 
 function getQuantizedDelta(rawDelta) {
-  // Aşırı gecikmeleri (sekme arkada kaldıysa) sınırla
-  if (rawDelta > 100) return 1000 / 60;
-  if (rawDelta < 2) return VSYNC_CONFIGS[0].interval;
+  if (rawDelta > 100) return lockedInterval || (1000 / 60);
+  if (rawDelta < 2) return lockedInterval || (1000 / 240);
 
-  smoothDelta = smoothDelta * 0.85 + rawDelta * 0.15;
-
-  // 1. VSync Snapping: Donanım yenileme hızına milisaniyelik kilitlenme
-  for (let i = 0; i < VSYNC_CONFIGS.length; i++) {
-    const entry = VSYNC_CONFIGS[i];
-    const v = entry.interval;
-    if (Math.abs(rawDelta - v) <= entry.tol) {
-      return v;
-    }
-    // 1 kare gecikmesi (2x VSync periyodu)
-    if (Math.abs(rawDelta - (v * 2)) <= entry.doubleTol) {
-      return v * 2;
+  // İlk 25 karede ekranın doğal frekansını hassas tespit et ve kitle
+  if (!lockedInterval && warmSamples) {
+    warmSamples.push(rawDelta);
+    if (warmSamples.length >= 25) {
+      warmSamples.sort((a, b) => a - b);
+      const median = warmSamples[Math.floor(warmSamples.length / 2)];
+      let bestDiff = Infinity;
+      for (const p of VSYNC_PRESETS) {
+        const diff = Math.abs(median - p.interval);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          lockedInterval = p.interval;
+        }
+      }
+      warmSamples = null;
     }
   }
 
-  // 2. Standart dışı bir süre geldiyse ani zıplamayı önleyen hareketli ortalama
-  return smoothDelta;
+  if (lockedInterval) {
+    const tol = Math.max(1.8, lockedInterval * 0.35);
+    // Standart kare: Windows timer sapması ne olursa olsun kilitli frekansı ver
+    if (Math.abs(rawDelta - lockedInterval) <= tol) {
+      return lockedInterval;
+    }
+    // Çift kare gecikmesi
+    if (Math.abs(rawDelta - (lockedInterval * 2)) <= tol * 1.5) {
+      return lockedInterval * 2;
+    }
+  }
+
+  // Fallback
+  for (let i = 0; i < VSYNC_PRESETS.length; i++) {
+    const v = VSYNC_PRESETS[i].interval;
+    if (Math.abs(rawDelta - v) <= 1.5) return v;
+  }
+  return rawDelta;
 }
 
 function loop(now) {
