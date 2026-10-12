@@ -12,6 +12,7 @@ export const CONFIG = {
   // Fizik (60fps dt=1 için uyarlanmış)
   GRAVITY_RUN: 0.64,
   JUMP_VELOCITY: -12.8,
+  DOUBLE_JUMP_VELOCITY: -11.6,  // Havada 2. zıplama (Double Jump)
   GRAVITY_FLY: 0.35,
   FLAP_VELOCITY: -7.0,
   
@@ -23,7 +24,8 @@ export const CONFIG = {
   IDLE_TIMEOUT: 30000,
 
   // Skor ve Tohum Dengesi
-  SEED_VALUE: 15,               // Rekabetçi & dengeli tohum puanı (her tohum +15 Puan)
+  SEED_VALUE: 15,               // Rekabetçi & dengeli standart tohum puanı
+  HIGH_SEED_VALUE: 25,          // Çift zıplamayla ulaşılan büyük tohum ödülü
 
   // Uçuş (Fly) Modu Boru Standartları (px)
   FLY_ENTRY_BUFFER: 460,        // Fırladıktan sonra ilk borunun çıkması için ferah kalkış koridoru

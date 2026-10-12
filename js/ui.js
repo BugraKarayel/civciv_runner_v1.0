@@ -184,8 +184,8 @@ export const UI = {
     ctx.textBaseline = 'middle';
 
     ctx.fillStyle = 'white';
-    ctx.font = '20px "Press Start 2P", monospace';
-    ctx.fillText('SPACE / TIKLA = ZIPLA / UÇ', w / 2, 110);
+    ctx.font = '18px "Press Start 2P", monospace';
+    ctx.fillText('SPACE / TIKLA = ZIPLA (HAVADA ÇİFT ZIPLA!)', w / 2, 110);
 
     // Puan hesaplama
     ctx.fillStyle = '#fde047';
@@ -194,11 +194,11 @@ export const UI = {
 
     ctx.fillStyle = '#ffffff';
     ctx.font = '13px "Press Start 2P", monospace';
-    ctx.fillText('NET SKOR = (MESAFE + TOHUM x ' + (CONFIG.SEED_VALUE || 15) + ') x HIZ ÇARPANI', w / 2, 232);
+    ctx.fillText('NET SKOR = (MESAFE + TOHUM PUANI) x HIZ ÇARPANI', w / 2, 232);
 
     ctx.font = '11px "Press Start 2P", monospace';
     ctx.fillStyle = '#e2e8f0';
-    ctx.fillText('Her 10 piksel koşu = 1 puan  |  Her tohum = ' + (CONFIG.SEED_VALUE || 15) + ' puan', w / 2, 272);
+    ctx.fillText('Normal Tohum: +' + (CONFIG.SEED_VALUE || 15) + '  |  Yüksek Büyük Tohum: +' + (CONFIG.HIGH_SEED_VALUE || 25) + ' ★ (Çift Zıpla!)', w / 2, 272);
     ctx.fillStyle = '#4ade80';
     ctx.fillText('Hızlandıkça çarpan x1.0 > x2.0 olur: hızlı alınan puan daha değerli!', w / 2, 304);
     ctx.fillStyle = '#38bdf8';

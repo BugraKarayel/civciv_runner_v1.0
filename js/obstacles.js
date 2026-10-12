@@ -117,29 +117,60 @@ class Ramp {
   }
 }
 
-class Seed {
-  constructor(x, y) {
-    this.x = x; this.y = y; this.radius = 12;
+export class Seed {
+  constructor(x, y, isHigh = false) {
+    this.x = x;
+    this.y = y;
+    this.isHigh = isHigh;
+    this.scale = isHigh ? 1.45 : 1.0;
+    this.radius = isHigh ? 18 : 12;
     this.markedForDeletion = false;
     this.floatOffset = Math.random() * Math.PI * 2;
   }
   update(dist, dt) {
-    this.x -= dist; this.floatOffset += 0.08 * dt;
+    this.x -= dist;
+    this.floatOffset += (this.isHigh ? 0.09 : 0.08) * dt;
     if (this.x + this.radius < -20) this.markedForDeletion = true;
   }
   draw(ctx, tick) {
-    const bob = Math.sin(this.floatOffset) * 2 * CONFIG.PX;
+    const bob = Math.sin(this.floatOffset) * (this.isHigh ? 3 : 2) * CONFIG.PX;
     const drawY = Math.round(this.y + bob);
     const rx = Math.round(this.x);
-    drawSprite(ctx, SPRITES.seed, rx - 12, drawY - 12);
-    const a = tick * 0.12;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(Math.round(rx + Math.cos(a) * 16), Math.round(drawY + Math.sin(a) * 16), 3, 3);
+
+    if (this.isHigh) {
+      // Çift zıplama ödülü: Büyütülmüş altın tohum
+      ctx.save();
+      ctx.translate(rx, drawY);
+      ctx.scale(this.scale, this.scale);
+      drawSprite(ctx, SPRITES.seed, -12, -12);
+      ctx.restore();
+
+      // Dönen altın ve beyaz pırıltılar
+      const a1 = tick * 0.14;
+      const a2 = a1 + Math.PI;
+      ctx.fillStyle = '#fde047';
+      ctx.fillRect(Math.round(rx + Math.cos(a1) * 20), Math.round(drawY + Math.sin(a1) * 20), 4, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(Math.round(rx + Math.cos(a2) * 20), Math.round(drawY + Math.sin(a2) * 20), 3, 3);
+
+      // Hafif altın ışıltı halkası
+      ctx.strokeStyle = 'rgba(253, 224, 71, 0.45)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(rx, drawY, 18 + Math.sin(tick * 0.1) * 3, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      drawSprite(ctx, SPRITES.seed, rx - 12, drawY - 12);
+      const a = tick * 0.12;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(Math.round(rx + Math.cos(a) * 16), Math.round(drawY + Math.sin(a) * 16), 3, 3);
+    }
   }
   checkCollect(box) {
     const closeX = Math.max(box.x, Math.min(this.x, box.x + box.width));
     const closeY = Math.max(box.y, Math.min(this.y, box.y + box.height));
-    const dx = this.x - closeX; const dy = this.y - closeY;
+    const dx = this.x - closeX;
+    const dy = this.y - closeY;
     return dx * dx + dy * dy < (this.radius + 4) ** 2;
   }
 }
@@ -244,8 +275,12 @@ export const ObstacleManager = {
         obs.gapBonus = Math.random() * 120;
         this.obstacles.push(obs);
 
-        if (Math.random() < 0.75) {
-          this.seeds.push(new Seed(CONFIG.CANVAS_WIDTH + obs.width / 2, CONFIG.GROUND_Y - 128));
+        if (Math.random() < 0.45) {
+          const isHigh = Math.random() < 0.38;
+          // Normal tohum zeminden ~105px yukarıda (tek zıplamayla rahat alınır)
+          // Yüksek tohum yaklaşık iki katı yükseklikte (~215px, sadece double jump ile alınabilir)
+          const seedY = isHigh ? (CONFIG.GROUND_Y - 215) : (CONFIG.GROUND_Y - 105);
+          this.seeds.push(new Seed(CONFIG.CANVAS_WIDTH + obs.width / 2, seedY, isHigh));
         }
       }
     } else if (StateMachine.current === States.FLY) {
@@ -344,10 +379,12 @@ export const ObstacleManager = {
       const s = this.seeds[i];
       s.update(dist, dt);
       if (!s.markedForDeletion && s.checkCollect(pBox)) {
-        Score.addSeed();
+        const seedVal = s.isHigh ? (CONFIG.HIGH_SEED_VALUE || 25) : (CONFIG.SEED_VALUE || 15);
+        Score.addSeed(seedVal);
         sounds.collectSeed();
         this.createSparks(s.x, s.y);
-        this.addFloatingText('+' + Math.round((CONFIG.SEED_VALUE || 15) * Score.multiplier), s.x, s.y - 12, '#fde047');
+        const floatText = '+' + Math.round(seedVal * Score.multiplier) + (s.isHigh ? ' ★' : '');
+        this.addFloatingText(floatText, s.x, s.y - 12, s.isHigh ? '#fbbf24' : '#fde047');
         s.markedForDeletion = true;
       }
     }
@@ -452,7 +489,7 @@ export const ObstacleManager = {
     const reachable = [];
     for (let i = 0; i < this.seeds.length; i++) {
       const s = this.seeds[i];
-      if (s.y >= CONFIG.GROUND_Y - 120) {
+      if (s.isHigh || s.y >= CONFIG.GROUND_Y - 230) {
         reachable.push(s);
       } else {
         this.createSparks(s.x, s.y);

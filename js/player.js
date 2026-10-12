@@ -21,6 +21,7 @@ export class Player {
     this.y = CONFIG.GROUND_Y - this.height;
     this.vy = 0;
     this.isGrounded = true;
+    this.jumpsRemaining = 2;
     this.rotation = 0;
     this.isDead = false;
     this.invulnerableTime = 0;
@@ -33,7 +34,25 @@ export class Player {
       if (this.isGrounded) {
         this.vy = CONFIG.JUMP_VELOCITY;
         this.isGrounded = false;
+        this.jumpsRemaining = 1;
         sounds.jump();
+      } else if (this.jumpsRemaining > 0) {
+        // Double Jump (havada 2. zıplama)
+        this.vy = CONFIG.DOUBLE_JUMP_VELOCITY;
+        this.jumpsRemaining = 0;
+        this.rotation = -0.22;
+        sounds.flap();
+        // Ayakların altında hafif puf parçacıkları
+        for (let i = 0; i < 5; i++) {
+          ObstacleManager.pushParticle(
+            this.x + this.width * 0.35 + (Math.random() - 0.5) * 14,
+            this.y + this.height - 2,
+            (Math.random() - 0.5) * 3,
+            Math.random() * 2 + 1,
+            Math.floor(Math.random() * 3 + 3),
+            '#ffffff'
+          );
+        }
       }
     } else if (StateMachine.current === States.FLY) {
       this.vy = CONFIG.FLAP_VELOCITY;
@@ -58,6 +77,7 @@ export class Player {
         this.y = CONFIG.GROUND_Y - this.height;
         this.vy = 0;
         this.isGrounded = true;
+        this.jumpsRemaining = 2;
         this.rotation = 0;
       } else {
         this.isGrounded = false;
@@ -86,6 +106,7 @@ export class Player {
           this.y = CONFIG.GROUND_Y - this.height;
           this.vy = 0;
           this.isGrounded = true;
+          this.jumpsRemaining = 2;
           this.rotation = 0;
         }
       }

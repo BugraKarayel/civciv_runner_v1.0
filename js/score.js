@@ -51,9 +51,10 @@ export const Score = {
     this.distPts += (add / 10) * this.multiplier;
   },
 
-  addSeed() {
+  addSeed(customValue) {
     this.seeds++;
-    this.seedPts += (CONFIG.SEED_VALUE || 15) * this.multiplier;
+    const base = customValue !== undefined ? customValue : (CONFIG.SEED_VALUE || 15);
+    this.seedPts += base * this.multiplier;
   },
 
   addTime(ms) {
