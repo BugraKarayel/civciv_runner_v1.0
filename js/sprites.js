@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
-import { GROUND_PALETTE } from './palette.js';
+import { GROUND_PALETTE, CLASSIC_GROUND_PALETTE, PaletteManager } from './palette.js';
+import { SkinManager } from './skins.js';
 
 export function makeCanvas(w, h) {
   const c = document.createElement('canvas');
@@ -66,25 +67,98 @@ const CHICK_ROWS = {
   dead: ["......CC........","....ccccCC......","...LLLLLL.......","..LLLLLLLL..b...","..LLLLLxxLE.BB..","..LLLLxxLE.BBB..","..YYYYKKYY.BBB..",".YYYYYYYYYY.....",".WWWWYYYYYYSS...",".wWWWWYYYYYSSS..","..WWWSSSSSSSSS..","..SSSSSSSSSSS...","....F...F.......","...FFF.FFF......"],
 };
 
-const ROCK_PALETTE = { '.': '#1c1917', 'L': '#9ca3af', 'M': '#6b7280', 'D': '#374151', 'G': GROUND_PALETTE.grassLight, 'g': GROUND_PALETTE.grassDark };
+// 2. DEDEKTİF CİVCİV (Fötr Şapka, Gözlük & Haki Trençkot)
+const DETECTIVE_PALETTE = {
+  '.': '#29170a',
+  'Y': '#fec629', 'L': '#ffe57f', 'S': '#d97706',
+  'h': '#92400e', 'H': '#b45309', 'd': '#451a03',
+  'b': '#1e293b',
+  'T': '#b45309', 't': '#d97706', 'k': '#78350f',
+  'g': '#1e293b', // Gözlük çerçevesi (şık koyu çerçeve)
+  'c': '#bae6fd', // Gözlük camı yansıması (hafif açık mavi lens)
+  'B': '#ea580c', 'O': '#fb923c',
+  'E': '#18181b', 'W': '#ffffff', 'K': '#fb7185',
+  'F': '#ea580c', 'x': '#b91c1c'
+};
+
+const DETECTIVE_ROWS = {
+  run1: ["......hh........","....HHHHdd......","...bbbbbb.......","..LLLL.gggg.O...","..LLLLgcEgEgBB..","..LLLLgWEgEgBBB.","..YYYYgKYggBBB..",".TTTTTTTTTT.....",".TTTTTTTTTTSS...","TTTTTTTTTTTSSS..",".TTTTkkkkkkkkk..","..kkkkkkkkkkk...","...F.....F......","..FFF...FFF....."],
+  run2: ["......hh........","....HHHHdd......","...bbbbbb.......","..LLLL.gggg.O...","..LLLLgcEgEgBB..","..LLLLgWEgEgBBB.","..YYYYgKYggBBB..",".TTTTTTTTTT.....",".TTTTTTTTTTSS...",".tTTTTTTTTTSSS..","..TTTkkkkkkkkk..","..kkkkkkkkkkk...","....F...F.......","...FFF.FFF......"],
+  flapUp: ["....tTT.hh......","...TTTTHHHHdd...","..TTTTbbbbbb....",".tTT.LLLL.ggggO.",".....LLLgcEgE.BB",".....LLgWEgEgBBB",".....YYYgKYggBBB","....TTTTTTTTT...","....TTTTTTTTSS..",".....TTTTTTSSS..",".....kkkkkkkkk..","......kkkkkkk...",".......FF.......","......FFFF......"],
+  flapDown: ["......hh........","....HHHHdd......","...bbbbbb.......","..LLLL.gggg.O...","..LLLLgcEgEgBB..","..LLLLgWEgEgBBB.","..YYYYgKYggBBB..",".TTTTTTTTTT.....","TTTTTTTTTTTSS...",".TTTT.TTTTTSSS..","..tT.kkkkkkkkk..","..kkkkkkkkkkk...",".......FF.......","......FFFF......"],
+  dead: ["......hh........","....HHHHdd......","...bbbbbb.......","..LLLL.gggg.O...","..LLLLgcxxEgBB..","..LLLLgxxgEgBBB.","..YYYYgKYggBBB..",".TTTTTTTTTT.....",".TTTTTTTTTTSS...",".tTTTTTTTTTSSS..","..TTTkkkkkkkkk..","..kkkkkkkkkkk...","....F...F.......","...FFF.FFF......"]
+};
+
+// 3. FUTBOLCU CİVCİV (Türkiye Milli Takımı Kırmızı-Beyaz Forma & Krampon)
+const FOOTBALLER_PALETTE = {
+  '.': '#3b0707',
+  'Y': '#fec629', 'L': '#ffe57f', 'S': '#d97706',
+  'R': '#dc2626', 'r': '#b91c1c',
+  'W': '#ffffff', 'w': '#f1f5f9',
+  'B': '#ea580c', 'b': '#fb923c',
+  'E': '#18181b', 'H': '#ffffff', 'K': '#fb7185',
+  'P': '#0f172a', 'p': '#334155',
+  'F': '#ea580c', 'x': '#b91c1c'
+};
+
+const FOOTBALLER_ROWS = {
+  run1: ["......RR........","....RRWWRR......","...LLLLLL.......","..LLLLLLLL..b...","..LLLLLEELE.BB..","..LLLLHEELEBBB..","..YYYYKKYY.BBB..",".RRRRRRRRRR.....",".WWWWWWWWWWSS...","RRRRRRRRRRRSSS..",".WWWWWWWWWWWWW..","..WWWWWWWWWWW...","...P.....P......","..PPP...PPP....."],
+  run2: ["......RR........","....RRWWRR......","...LLLLLL.......","..LLLLLLLL..b...","..LLLLLEELE.BB..","..LLLLHEELEBBB..","..YYYYKKYY.BBB..",".RRRRRRRRRR.....",".WWWWWWWWWWSS...",".rRRRRRRRRRSSS..","..WWWWWWWWWWWW..","..WWWWWWWWWWW...","....P...P.......","...PPP.PPP......"],
+  flapUp: ["....rRR.RR......","...RRRRRRWWRR...","..RRRRLLLLLL....",".rRR.LLLLLL..b..",".....LLLLEELE.BB",".....LLLHEELEBBB",".....YYYKKYY.BBB","....RRRRRRRRR...","....WWWWWWWWSS..",".....RRRRRRSSS..",".....WWWWWWWWW..","......WWWWWWW...",".......PP.......","......PPPP......"],
+  flapDown: ["......RR........","....RRWWRR......","...LLLLLL.......","..LLLLLLLL..b...","..LLLLLEELE.BB..","..LLLLHEELEBBB..","..YYYYKKYY.BBB..",".RRRRRRRRRR.....","WWWWWWWWWWWSS...",".RRRR.RRRRRSSS..","..rR.WWWWWWWWW..","..WWWWWWWWWWW...",".......PP.......","......PPPP......"],
+  dead: ["......RR........","....RRWWRR......","...LLLLLL.......","..LLLLLLLL..b...","..LLLLLxxLE.BB..","..LLLLxxLE.BBB..","..YYYYKKYY.BBB..",".RRRRRRRRRR.....",".WWWWWWWWWWSS...",".rRRRRRRRRRSSS..","..RRRWWWWWWWWW..","..WWWWWWWWWWW...","....P...P.......","...PPP.PPP......"]
+};
+
+const ROCK_PALETTE_CLASSIC = { '.': '#1c1917', 'L': '#9ca3af', 'M': '#6b7280', 'D': '#374151', 'G': CLASSIC_GROUND_PALETTE.grassLight, 'g': CLASSIC_GROUND_PALETTE.grassDark };
+const ROCK_PALETTE_PASTEL = { '.': '#1c1917', 'L': '#9ca3af', 'M': '#6b7280', 'D': '#374151', 'G': GROUND_PALETTE.grassLight, 'g': GROUND_PALETTE.grassDark };
 const ROCK_ROWS = ["....GG......","...GgGg.....","..LLLLLM....",".LLLLLLMM...",".LLLLMMMMM..","LLMMMMMMMDD.","LMMDMMMMDDDD","LMMMDMMMDDDD",".MMMDDDDDDD."];
 
-const CACTUS_PALETTE = { '.': '#143615', 'L': GROUND_PALETTE.grassLight, 'M': GROUND_PALETTE.grassMain, 'D': GROUND_PALETTE.grassDark, 'R': GROUND_PALETTE.flowerPetal, 'Y': GROUND_PALETTE.flowerCenter };
+const CACTUS_PALETTE_CLASSIC = { '.': '#143615', 'L': CLASSIC_GROUND_PALETTE.grassLight, 'M': CLASSIC_GROUND_PALETTE.grassMain, 'D': CLASSIC_GROUND_PALETTE.grassDark, 'R': CLASSIC_GROUND_PALETTE.flowerPetal, 'Y': CLASSIC_GROUND_PALETTE.flowerCenter };
+const CACTUS_PALETTE_PASTEL = { '.': '#143615', 'L': GROUND_PALETTE.grassLight, 'M': GROUND_PALETTE.grassMain, 'D': GROUND_PALETTE.grassDark, 'R': GROUND_PALETTE.flowerPetal, 'Y': GROUND_PALETTE.flowerCenter };
 const CACTUS_ROWS = ["....RYR.....","....RRR.....","....MMM.....","....LMM.....","..L.LMM.....",".LL.LMM.LL..",".LL.LMM.LM..",".LM.LMM.MM..","..MMLMMMM...","...LLMMM....","...LLMMD....","...LLMMD....","...LLMMD....","...LLMMD....","...DDDDD....","............"];
+
+const SPRITE_ROCK_CLASSIC = buildSprite(ROCK_ROWS, ROCK_PALETTE_CLASSIC);
+const SPRITE_ROCK_PASTEL = buildSprite(ROCK_ROWS, ROCK_PALETTE_PASTEL);
+
+const SPRITE_CACTUS_CLASSIC = buildSprite(CACTUS_ROWS, CACTUS_PALETTE_CLASSIC);
+const SPRITE_CACTUS_PASTEL = buildSprite(CACTUS_ROWS, CACTUS_PALETTE_PASTEL);
 
 const SEED_PALETTE = { '.': '#713f12', 'Y': '#fde047', 'L': '#fef08a', 'O': '#f59e0b', 'S': '#d97706' };
 const SEED_ROWS = ["...LL...","..LYYL..",".LYYYYO.","LYYYYYOO","LYYYYOOO",".OYYOOO.","..OOOO..","...SS..."];
 
 export const SPRITES = {
-  chick: {
-    run1: buildSprite(CHICK_ROWS.run1, CHICK_PALETTE),
-    run2: buildSprite(CHICK_ROWS.run2, CHICK_PALETTE),
-    flapUp: buildSprite(CHICK_ROWS.flapUp, CHICK_PALETTE),
-    flapDown: buildSprite(CHICK_ROWS.flapDown, CHICK_PALETTE),
-    dead: buildSprite(CHICK_ROWS.dead, CHICK_PALETTE),
+  skins: {
+    classic: {
+      run1: buildSprite(CHICK_ROWS.run1, CHICK_PALETTE),
+      run2: buildSprite(CHICK_ROWS.run2, CHICK_PALETTE),
+      flapUp: buildSprite(CHICK_ROWS.flapUp, CHICK_PALETTE),
+      flapDown: buildSprite(CHICK_ROWS.flapDown, CHICK_PALETTE),
+      dead: buildSprite(CHICK_ROWS.dead, CHICK_PALETTE),
+    },
+    detective: {
+      run1: buildSprite(DETECTIVE_ROWS.run1, DETECTIVE_PALETTE),
+      run2: buildSprite(DETECTIVE_ROWS.run2, DETECTIVE_PALETTE),
+      flapUp: buildSprite(DETECTIVE_ROWS.flapUp, DETECTIVE_PALETTE),
+      flapDown: buildSprite(DETECTIVE_ROWS.flapDown, DETECTIVE_PALETTE),
+      dead: buildSprite(DETECTIVE_ROWS.dead, DETECTIVE_PALETTE),
+    },
+    footballer: {
+      run1: buildSprite(FOOTBALLER_ROWS.run1, FOOTBALLER_PALETTE),
+      run2: buildSprite(FOOTBALLER_ROWS.run2, FOOTBALLER_PALETTE),
+      flapUp: buildSprite(FOOTBALLER_ROWS.flapUp, FOOTBALLER_PALETTE),
+      flapDown: buildSprite(FOOTBALLER_ROWS.flapDown, FOOTBALLER_PALETTE),
+      dead: buildSprite(FOOTBALLER_ROWS.dead, FOOTBALLER_PALETTE),
+    }
   },
-  rock: buildSprite(ROCK_ROWS, ROCK_PALETTE),
-  cactus: buildSprite(CACTUS_ROWS, CACTUS_PALETTE),
+  get chick() {
+    return this.skins[SkinManager.current] || this.skins.classic;
+  },
+  get rock() {
+    return PaletteManager.isPastel ? SPRITE_ROCK_PASTEL : SPRITE_ROCK_CLASSIC;
+  },
+  get cactus() {
+    return PaletteManager.isPastel ? SPRITE_CACTUS_PASTEL : SPRITE_CACTUS_CLASSIC;
+  },
   seed: buildSprite(SEED_ROWS, SEED_PALETTE),
 };
 
@@ -105,37 +179,63 @@ function buildSky(colors) {
   return c;
 }
 
-export const SKY_GROUND = buildSky(['#5b9cf0', '#6eaaf2', '#86baf4', '#a3cdf6', '#c3e0f8', '#e2efd0', '#f7f1b5']);
-export const SKY_FLIGHT = buildSky(['#3b6fd6', '#5a7fd0', '#8a8ac0', '#c98f8a', '#ee9a5c', '#f7b877', '#fcd9a8']);
+// 1. Standart Klasik Gökyüzü Katmanları (Palet 1, 2, 3)
+export const SKY_GROUND_CLASSIC = buildSky(['#5b9cf0', '#6eaaf2', '#86baf4', '#a3cdf6', '#c3e0f8', '#e2efd0', '#f7f1b5']);
+export const SKY_FLIGHT_CLASSIC = buildSky(['#3b6fd6', '#5a7fd0', '#8a8ac0', '#c98f8a', '#ee9a5c', '#f7b877', '#fcd9a8']);
+
+// 2. Görsel 4'ün Pastel Coolors Gökyüzü Katmanları (Palet 4: Pastel Modu)
+export const SKY_GROUND_PASTEL = buildSky(['#ABA8EE', '#9ec5f7', '#7DD1F7', '#88EBB8', '#C4F0C5', '#F7EE8A', '#FCB18B']);
+export const SKY_FLIGHT_PASTEL = buildSky(['#6366f1', '#818cf8', '#D89DF2', '#F0809F', '#FCB18B', '#F7EE8A', '#fef08a']);
+
+export function getSkyGround() {
+  return PaletteManager.isPastel ? SKY_GROUND_PASTEL : SKY_GROUND_CLASSIC;
+}
+
+export function getSkyFlight() {
+  return PaletteManager.isPastel ? SKY_FLIGHT_PASTEL : SKY_FLIGHT_CLASSIC;
+}
 
 export const GROUND_TILE = 64;
 export const GROUND_TOP = CONFIG.GROUND_Y - 6;
-export const GROUND_STRIP = (() => {
+
+function buildGroundStrip(palette) {
   const [c, g] = makeCanvas(CONFIG.CANVAS_WIDTH + GROUND_TILE, CONFIG.CANVAS_HEIGHT - GROUND_TOP);
   const oy = CONFIG.GROUND_Y - GROUND_TOP; 
   const W = c.width;
-  g.fillStyle = GROUND_PALETTE.grassMain; g.fillRect(0, oy, W, 8);
-  g.fillStyle = GROUND_PALETTE.grassLight; g.fillRect(0, oy, W, 3);
-  g.fillStyle = GROUND_PALETTE.grassDark; g.fillRect(0, oy + 8, W, 3);
-  g.fillStyle = GROUND_PALETTE.dirtLight; g.fillRect(0, oy + 11, W, c.height);
-  g.fillStyle = GROUND_PALETTE.dirtMid; g.fillRect(0, oy + 36, W, 3);
-  g.fillStyle = GROUND_PALETTE.dirtDark; g.fillRect(0, oy + 39, W, c.height);
+  g.fillStyle = palette.grassMain; g.fillRect(0, oy, W, 8);
+  g.fillStyle = palette.grassLight; g.fillRect(0, oy, W, 3);
+  g.fillStyle = palette.grassDark; g.fillRect(0, oy + 8, W, 3);
+  g.fillStyle = palette.dirtLight; g.fillRect(0, oy + 11, W, c.height);
+  g.fillStyle = palette.dirtMid; g.fillRect(0, oy + 36, W, 3);
+  g.fillStyle = palette.dirtDark; g.fillRect(0, oy + 39, W, c.height);
   for (let x = 0; x < W; x += 16) {
-    g.fillStyle = GROUND_PALETTE.grassLight; g.fillRect(x + 2, oy - 3, 3, 3); g.fillRect(x + 11, oy - 6, 3, 6);
-    g.fillStyle = GROUND_PALETTE.grassMain; g.fillRect(x + 8, oy - 3, 3, 3);
+    g.fillStyle = palette.grassLight; g.fillRect(x + 2, oy - 3, 3, 3); g.fillRect(x + 11, oy - 6, 3, 6);
+    g.fillStyle = palette.grassMain; g.fillRect(x + 8, oy - 3, 3, 3);
   }
   for (let x = 0; x < W; x += 32) {
     g.fillStyle = '#9ca3af'; g.fillRect(x + 6, oy + 18, 6, 3);
     g.fillStyle = '#4b5563'; g.fillRect(x + 9, oy + 21, 6, 3);
-    g.fillStyle = GROUND_PALETTE.dirtMid; g.fillRect(x + 22, oy + 27, 6, 3);
+    g.fillStyle = palette.dirtMid; g.fillRect(x + 22, oy + 27, 6, 3);
     g.fillStyle = '#2f1203'; g.fillRect(x + 14, oy + 51, 9, 3);
   }
   for (let x = 0; x < W; x += GROUND_TILE) {
-    g.fillStyle = GROUND_PALETTE.flowerPetal; g.fillRect(x + 40, oy - 6, 3, 3);
-    g.fillStyle = GROUND_PALETTE.flowerCenter; g.fillRect(x + 40, oy - 3, 3, 3);
+    g.fillStyle = palette.flowerPetal; g.fillRect(x + 40, oy - 6, 3, 3);
+    g.fillStyle = palette.flowerCenter; g.fillRect(x + 40, oy - 3, 3, 3);
   }
   return c;
-})();
+}
+
+export const GROUND_STRIP_CLASSIC = buildGroundStrip(CLASSIC_GROUND_PALETTE);
+export const GROUND_STRIP_PASTEL = buildGroundStrip(GROUND_PALETTE);
+
+export function getGroundStrip() {
+  return PaletteManager.isPastel ? GROUND_STRIP_PASTEL : GROUND_STRIP_CLASSIC;
+}
+
+// Geriye dönük uyumluluk
+export const SKY_GROUND = SKY_GROUND_CLASSIC;
+export const SKY_FLIGHT = SKY_FLIGHT_CLASSIC;
+export const GROUND_STRIP = GROUND_STRIP_CLASSIC;
 
 function buildCloud(s) {
   const [c, g] = makeCanvas(48 * s, 20 * s);

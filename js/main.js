@@ -11,6 +11,7 @@ import { UI } from './ui.js';
 import { Konami } from './konami.js';
 import { PaletteManager } from './palette.js';
 import { GodMode } from './godmode.js';
+import { SkinManager } from './skins.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d', { alpha: false });
@@ -28,7 +29,25 @@ sounds.init();
 World.init();
 ObstacleManager.init();
 
-// Kısayollar: Ctrl+G (God Mode), 'P' veya 1-4 (Palet)
+// Menüde (IDLE) kostüm kartına veya vitrine tıklama
+canvas.addEventListener('pointerdown', (e) => {
+  if (StateMachine.current === States.IDLE) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+    if (UI.handleSkinClick(canvasX, canvasY)) {
+      sounds.init();
+      sounds.collectSeed && sounds.collectSeed();
+      e.stopPropagation();
+      Input.actionJustPressed = false;
+      return;
+    }
+  }
+});
+
+// Kısayollar: Ctrl+G (God Mode), 'P' veya 1-4 (Palet), 'C' / Oklar (Kostüm)
 window.addEventListener('keydown', (e) => {
   // Ctrl + G / Cmd + G: God Mode Toggle
   if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G')) {
@@ -39,6 +58,31 @@ window.addEventListener('keydown', (e) => {
   }
 
   if (StateMachine.current === States.ENTER_NAME) return;
+
+  // 'C' tuşu: Her an kostüm değiştir
+  if (e.key === 'c' || e.key === 'C') {
+    SkinManager.nextSkin();
+    sounds.init();
+    sounds.collectSeed && sounds.collectSeed();
+    return;
+  }
+
+  // IDLE menüsündeyken Sol/Sağ Ok veya A/D ile kostüm değiştir
+  if (StateMachine.current === States.IDLE) {
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+      SkinManager.nextSkin();
+      sounds.init();
+      sounds.collectSeed && sounds.collectSeed();
+      return;
+    }
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+      SkinManager.prevSkin();
+      sounds.init();
+      sounds.collectSeed && sounds.collectSeed();
+      return;
+    }
+  }
+
   if (e.key === 'p' || e.key === 'P') {
     PaletteManager.nextPalette();
     sounds.milestone && sounds.milestone();

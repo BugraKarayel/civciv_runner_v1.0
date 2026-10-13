@@ -1,8 +1,8 @@
 import { CONFIG } from './config.js';
-import { SKY_GROUND, SKY_FLIGHT, GROUND_STRIP, GROUND_TOP, GROUND_TILE, CLOUD_SPRITES } from './sprites.js';
+import { getSkyGround, getSkyFlight, getGroundStrip, GROUND_TOP, GROUND_TILE, CLOUD_SPRITES } from './sprites.js';
 import { StateMachine, States } from './state.js';
 import { ObstacleManager } from './obstacles.js';
-import { GROUND_PALETTE } from './palette.js';
+import { PaletteManager } from './palette.js';
 
 class Cloud {
   constructor() {
@@ -65,13 +65,16 @@ export const World = {
 
   draw(ctx) {
     const isFly = StateMachine.current === States.FLY;
+    const skyGround = getSkyGround();
+    const skyFlight = getSkyFlight();
+    const groundStrip = getGroundStrip();
 
     // Gökyüzü: gündüz ile uçuş gecesi arasında yumuşak geçiş
-    ctx.drawImage(SKY_GROUND, 0, 0);
+    ctx.drawImage(skyGround, 0, 0);
     if (this.flyTransition > 0) {
       ctx.save();
       ctx.globalAlpha = this.flyTransition;
-      ctx.drawImage(SKY_FLIGHT, 0, 0);
+      ctx.drawImage(skyFlight, 0, 0);
       ctx.restore();
     }
 
@@ -85,7 +88,7 @@ export const World = {
       // 1. Kalkış fazı: Arkada kalan zemin sola kayarak ekrandan çıkar (clip yerine 0-maliyetli drawImage slice)
       if (this.takeoffGroundEndX !== null && this.takeoffGroundEndX > 0) {
         const gx = Math.min(CONFIG.CANVAS_WIDTH, Math.round(this.takeoffGroundEndX));
-        ctx.drawImage(GROUND_STRIP, off, 0, gx, stripH, 0, GROUND_TOP, gx, stripH);
+        ctx.drawImage(groundStrip, off, 0, gx, stripH, 0, GROUND_TOP, gx, stripH);
         // Uçurumun sağ kenarına dikey hat
         ctx.fillStyle = '#29170a';
         ctx.fillRect(gx - 3, GROUND_TOP, 3, stripH);
@@ -96,11 +99,11 @@ export const World = {
         const gx = Math.round(Math.max(0, this.landingGroundX));
         const gw = CONFIG.CANVAS_WIDTH - gx;
         if (gw > 0) {
-          ctx.drawImage(GROUND_STRIP, off + gx, 0, gw, stripH, gx, GROUND_TOP, gw, stripH);
+          ctx.drawImage(groundStrip, off + gx, 0, gw, stripH, gx, GROUND_TOP, gw, stripH);
           // İniş zemininin kenarına dikey sınır çizgisi ve çim detayı
           ctx.fillStyle = '#29170a';
           ctx.fillRect(gx, GROUND_TOP, 4, stripH);
-          ctx.fillStyle = GROUND_PALETTE.grassMain;
+          ctx.fillStyle = PaletteManager.groundPalette.grassMain;
           ctx.fillRect(gx, GROUND_TOP, 4, 6);
         }
       }
@@ -119,13 +122,13 @@ export const World = {
 
       if (groundEnd > 0) {
         const gw = Math.min(CONFIG.CANVAS_WIDTH, groundEnd);
-        ctx.drawImage(GROUND_STRIP, off, 0, gw, stripH, 0, GROUND_TOP, gw, stripH);
+        ctx.drawImage(groundStrip, off, 0, gw, stripH, 0, GROUND_TOP, gw, stripH);
         // Uçurumun sağ kenarına dikey hat
         ctx.fillStyle = '#29170a';
         ctx.fillRect(gw - 3, GROUND_TOP, 3, stripH);
       }
     } else {
-      ctx.drawImage(GROUND_STRIP, -off, GROUND_TOP);
+      ctx.drawImage(groundStrip, -off, GROUND_TOP);
     }
   }
 };

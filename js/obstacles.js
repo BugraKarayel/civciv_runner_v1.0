@@ -11,7 +11,7 @@ export function checkAABB(a, b) {
          a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
-class Obstacle {
+export class Obstacle {
   constructor(x, type) {
     this.x = x;
     this.type = type;
@@ -49,6 +49,10 @@ class Obstacle {
     if (this.type === 'SKY_PIPE') {
       this.drawTower(ctx, this.x, 0, this.topHeight, true);
       this.drawTower(ctx, this.x, this.bottomY, this.bottomHeight, false);
+    } else if (this.type === 'GROUND_ROCK') {
+      drawSprite(ctx, SPRITES.rock, Math.round(this.x), this.y);
+    } else if (this.type === 'GROUND_CACTUS') {
+      drawSprite(ctx, SPRITES.cactus, Math.round(this.x), this.y);
     } else {
       drawSprite(ctx, this.sprite, Math.round(this.x), this.y);
     }
@@ -86,7 +90,7 @@ class Obstacle {
   }
 }
 
-class Ramp {
+export class Ramp {
   constructor(x) {
     this.x = x;
     this.width = RAMP_W;

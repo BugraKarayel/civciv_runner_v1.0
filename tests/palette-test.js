@@ -61,7 +61,36 @@ PaletteManager.nextPalette();
 assert(PaletteManager.currentId === 4, 'nextPalette 3 -> 4');
 
 PaletteManager.nextPalette();
-assert(PaletteManager.currentId === 1, 'nextPalette 4 -> 1 döngüsü çalışıyor');
+// 4. Standart Zemin & Pastel Modu Geçiş Testleri
+import { CLASSIC_GROUND_PALETTE, PASTEL_GROUND_PALETTE } from '../js/palette.js';
+
+assert(CLASSIC_GROUND_PALETTE.grassLight === '#84cc16', 'CLASSIC_GROUND_PALETTE açık çim #84cc16');
+assert(CLASSIC_GROUND_PALETTE.grassMain === '#65a30d', 'CLASSIC_GROUND_PALETTE ana çim #65a30d');
+assert(CLASSIC_GROUND_PALETTE.flowerPetal === '#f43f5e', 'CLASSIC_GROUND_PALETTE çiçek #f43f5e');
+
+// Palet 1 aktifken isPastel false olmalı, klasik zemin verilmeli
+PaletteManager.setPalette(1);
+assert(PaletteManager.isPastel === false, 'Palet 1 seçiliyken isPastel false');
+assert(PaletteManager.groundPalette === CLASSIC_GROUND_PALETTE, 'Palet 1 seçiliyken groundPalette CLASSIC_GROUND_PALETTE');
+
+// Palet 2 aktifken isPastel false olmalı
+PaletteManager.setPalette(2);
+assert(PaletteManager.isPastel === false, 'Palet 2 seçiliyken isPastel false');
+assert(PaletteManager.groundPalette === CLASSIC_GROUND_PALETTE, 'Palet 2 seçiliyken groundPalette CLASSIC_GROUND_PALETTE');
+
+// Palet 3 aktifken isPastel false olmalı
+PaletteManager.setPalette(3);
+assert(PaletteManager.isPastel === false, 'Palet 3 seçiliyken isPastel false');
+assert(PaletteManager.groundPalette === CLASSIC_GROUND_PALETTE, 'Palet 3 seçiliyken groundPalette CLASSIC_GROUND_PALETTE');
+
+// Palet 4 (Pastel Coolors) aktifken isPastel true olmalı, pastel zemin verilmeli
+PaletteManager.setPalette(4);
+assert(PaletteManager.isPastel === true, 'Palet 4 seçiliyken isPastel true (Tam Pastel Modu)');
+assert(PaletteManager.groundPalette === PASTEL_GROUND_PALETTE, 'Palet 4 seçiliyken groundPalette PASTEL_GROUND_PALETTE');
+
+// Sıfırla: Palet 1'e geri dön
+PaletteManager.setPalette(1);
+assert(PaletteManager.currentId === 1, 'Varsayılan Palet 1 aktif');
 
 console.log(`\nResult: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

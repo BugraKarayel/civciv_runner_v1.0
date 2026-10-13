@@ -8,6 +8,8 @@ import { ProfanityFilter } from './filter.js';
 import { ObstacleManager } from './obstacles.js';
 import { PaletteManager } from './palette.js';
 import { GodMode } from './godmode.js';
+import { SkinManager, SKINS } from './skins.js';
+import { SPRITES, drawSprite } from './sprites.js';
 
 export const UI = {
   nameInputBuffer: "",
@@ -106,51 +108,201 @@ export const UI = {
     ctx.fillText(this.cachedMultText, w - 24, 52);
   },
 
+  skinCardBounds: [
+    { id: 'classic', x: 512, y: 252, w: 391, h: 40 },
+    { id: 'detective', x: 512, y: 298, w: 391, h: 40 },
+    { id: 'footballer', x: 512, y: 344, w: 391, h: 40 },
+  ],
+
+  handleSkinClick(canvasX, canvasY) {
+    if (StateMachine.current !== States.IDLE) return false;
+    for (const card of this.skinCardBounds) {
+      if (canvasX >= card.x && canvasX <= card.x + card.w &&
+          canvasY >= card.y && canvasY <= card.y + card.h) {
+        SkinManager.setSkin(card.id);
+        return true;
+      }
+    }
+    // Vitrin alanına tıklandığında da bir sonraki kostüme geç
+    if (canvasX >= 495 && canvasX <= 920 && canvasY >= 88 && canvasY <= 248) {
+      SkinManager.nextSkin();
+      return true;
+    }
+    return false;
+  },
+
   drawIdle(ctx, w, h) {
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    const now = performance.now();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.72)';
     ctx.fillRect(0, 0, w, h);
     
+    // Üst Başlık & GDG Alt Başlığı
     ctx.fillStyle = '#fde047';
-    ctx.font = '30px "Press Start 2P", monospace';
+    ctx.font = '26px "Press Start 2P", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('CİVCİV RUNNER', w / 2, 80);
+    ctx.textBaseline = 'middle';
+    ctx.fillText('CİVCİV RUNNER', w / 2, 46);
 
-    ctx.fillStyle = 'white';
-    ctx.font = '20px "Press Start 2P", monospace';
-    ctx.fillText('GÜNÜN TOP 10 SKORU', w / 2, 140);
+    ctx.fillStyle = '#aba8ee';
+    ctx.font = '9px "Press Start 2P", monospace';
+    ctx.fillText('GDG ON CAMPUS AİBÜ', w / 2, 68);
+
+    // ==========================================
+    // SOL KOLON: GÜNÜN TOP 10 SKORU
+    // ==========================================
+    const leftX = 40;
+    const leftY = 86;
+    const leftW = 425;
+    const leftH = 356;
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+    ctx.fillRect(leftX, leftY, leftW, leftH);
+    ctx.strokeStyle = PaletteManager.isPastel ? 'rgba(125, 209, 247, 0.5)' : 'rgba(56, 189, 248, 0.45)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(leftX, leftY, leftW, leftH);
+
+    ctx.fillStyle = '#7dd1f7';
+    ctx.font = '13px "Press Start 2P", monospace';
+    ctx.fillText('🏆 GÜNÜN TOP 10 SKORU', leftX + leftW / 2, leftY + 26);
+
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(leftX + 16, leftY + 44);
+    ctx.lineTo(leftX + leftW - 16, leftY + 44);
+    ctx.stroke();
 
     const formatted = Leaderboard.getFormattedDailyTop10();
-    ctx.font = '13px "Press Start 2P", monospace';
-    ctx.textAlign = 'left';
+    ctx.font = '11px "Press Start 2P", monospace';
     if (formatted.length === 0) {
-      ctx.fillText('Henüz skor yok!', w / 2 - 80, 200);
+      ctx.fillStyle = '#94a3b8';
+      ctx.textAlign = 'center';
+      ctx.fillText('Henüz skor yok!', leftX + leftW / 2, leftY + 160);
+      ctx.font = '9px "Press Start 2P", monospace';
+      ctx.fillText('İlk rekoru sen kır!', leftX + leftW / 2, leftY + 190);
     } else {
+      ctx.textAlign = 'left';
       for (let i = 0; i < formatted.length; i++) {
-        ctx.fillText(formatted[i], w / 2 - 250, 180 + i * 25);
+        if (i === 0) ctx.fillStyle = '#fde047';      // 1.: Altın sarısı
+        else if (i === 1) ctx.fillStyle = '#e2e8f0'; // 2.: Gümüş
+        else if (i === 2) ctx.fillStyle = '#fcb18b'; // 3.: Bronz / Şeftali
+        else ctx.fillStyle = '#94a3b8';              // 4-10: Açık gri
+        ctx.fillText(formatted[i], leftX + 22, leftY + 70 + i * 27);
       }
     }
 
-    const now = performance.now();
+    // ==========================================
+    // SAĞ KOLON: KOSTÜM / SKİN SEÇİMİ
+    // ==========================================
+    const rightX = 495;
+    const rightY = 86;
+    const rightW = 425;
+    const rightH = 356;
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+    ctx.fillRect(rightX, rightY, rightW, rightH);
+    ctx.strokeStyle = PaletteManager.isPastel ? 'rgba(240, 128, 159, 0.5)' : 'rgba(245, 158, 11, 0.45)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(rightX, rightY, rightW, rightH);
+
     ctx.textAlign = 'center';
+    ctx.fillStyle = '#f0809f';
+    ctx.font = '13px "Press Start 2P", monospace';
+    ctx.fillText('🐣 KOSTÜM SEÇİMİ', rightX + rightW / 2, rightY + 26);
+
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(rightX + 16, rightY + 44);
+    ctx.lineTo(rightX + rightW - 16, rightY + 44);
+    ctx.stroke();
+
+    // Seçili Kostüm Canlı Vitrini (Koşan Animasyonlu 2x Civciv - Kompakt & Zarif)
+    const currentSkinId = SkinManager.current;
+    const currentSkinSprites = SPRITES.skins[currentSkinId] || SPRITES.skins.classic;
+    const runFrame = (Math.floor(now / 150) % 2 === 0) ? currentSkinSprites.run1 : currentSkinSprites.run2;
+
+    // Vitrin kaidesi / halesi
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.beginPath();
+    ctx.ellipse(rightX + rightW / 2, rightY + 126, 36, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2x Ölçekli Koşan Civciv
+    if (runFrame) {
+      const sprW = runFrame.width * 2;
+      const sprH = runFrame.height * 2;
+      ctx.drawImage(runFrame, Math.round(rightX + rightW / 2 - sprW / 2), rightY + 40, sprW, sprH);
+    }
+
+    // Seçili Kostüm Bilgileri
+    const activeInfo = SkinManager.info;
+    ctx.font = '10px "Press Start 2P", monospace';
+    ctx.fillStyle = activeInfo.color;
+    ctx.fillText(activeInfo.name, rightX + rightW / 2, rightY + 138);
+    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(activeInfo.subtitle, rightX + rightW / 2, rightY + 152);
+
+    // 3 Kostüm Seçim Kartı
+    const skinList = SkinManager.list;
+    for (let idx = 0; idx < skinList.length; idx++) {
+      const sId = skinList[idx];
+      const skin = SKINS[sId];
+      const isSelected = (sId === currentSkinId);
+      const card = this.skinCardBounds[idx];
+
+      // Kart Arka Planı
+      ctx.fillStyle = isSelected ? 'rgba(255, 255, 255, 0.16)' : 'rgba(30, 41, 59, 0.65)';
+      ctx.fillRect(card.x, card.y, card.w, card.h);
+
+      // Kart Çerçevesi
+      ctx.strokeStyle = isSelected ? skin.color : 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = isSelected ? 2 : 1;
+      ctx.strokeRect(card.x, card.y, card.w, card.h);
+
+      // Sol: İkon / Rozet
+      ctx.font = '10px "Press Start 2P", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = isSelected ? skin.color : '#cbd5e1';
+      const arrow = isSelected ? '▶ ' : '  ';
+      ctx.fillText(`${arrow}${skin.badge}`, card.x + 14, card.y + 24);
+
+      // Sağ: Seçim Durumu
+      ctx.font = '8px "Press Start 2P", monospace';
+      ctx.textAlign = 'right';
+      ctx.fillStyle = isSelected ? '#ffffff' : '#64748b';
+      ctx.fillText(isSelected ? 'SEÇİLİ' : 'SEÇ [TIKLA]', card.x + card.w - 14, card.y + 24);
+    }
+
+    // Kartlar Altı Bilgilendirme
+    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillText('[C] / [← / →] ile Değiştir veya Tıkla', rightX + rightW / 2, rightY + 342);
+
+    // ==========================================
+    // ALT BÖLÜM: BAŞLAT & KISAYOLLAR
+    // ==========================================
     if (Konami.isFlashing(now)) {
       const cols = PaletteManager.rainbow;
-      ctx.font = '16px "Press Start 2P", monospace';
+      ctx.font = '15px "Press Start 2P", monospace';
       ctx.fillStyle = cols[Math.floor(now / 120) % cols.length];
-      ctx.fillText(Konami.active ? '* KONAMI MODU AÇIK! *' : 'KONAMI MODU KAPALI', w / 2, h - 90);
+      ctx.fillText(Konami.active ? '* KONAMI MODU AÇIK! *' : 'KONAMI MODU KAPALI', w / 2, h - 76);
     } else if (Konami.active) {
       const cols = PaletteManager.rainbow;
       ctx.font = '10px "Press Start 2P", monospace';
       ctx.fillStyle = cols[Math.floor(now / 160) % cols.length];
-      ctx.fillText('* KONAMI MODU *', w / 2, h - 90);
+      ctx.fillText('* KONAMI MODU *', w / 2, h - 76);
     }
 
     ctx.font = '13px "Press Start 2P", monospace';
     ctx.fillStyle = Math.floor(now / 500) % 2 === 0 ? '#ff5555' : 'white';
-    ctx.fillText('BAŞLAMAK İÇİN TIKLA VEYA SPACE', w / 2, h - 50);
+    ctx.fillText('BAŞLAMAK İÇİN TIKLA VEYA SPACE', w / 2, h - 46);
 
     ctx.font = '9px "Press Start 2P", monospace';
     ctx.fillStyle = '#64748b';
-    ctx.fillText('[P / 1-4] PALET • [Ctrl+G] GOD MODE', w / 2, h - 22);
+    ctx.fillText('[P / 1-4] PALET (4: Pastel Modu) • [Ctrl+G] GOD MODE • [C] KOSTÜM', w / 2, h - 20);
   },
 
   drawTutorial(ctx, w, h) {
@@ -417,4 +569,6 @@ export const UI = {
   }
 };
 
-window.addEventListener('keydown', (e) => UI.handleNameInput(e));
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', (e) => UI.handleNameInput(e));
+}

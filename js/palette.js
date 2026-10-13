@@ -43,7 +43,19 @@ export const PALETTES = {
   }
 };
 
-// Görsel 4'ün D89DF2 sağındaki çimen & toprak tonları:
+// Görsel 1-3 Standart Oyun Zemin Tonları
+export const CLASSIC_GROUND_PALETTE = {
+  grassLight: '#84cc16',    // Canlı açık çim
+  grassMain: '#65a30d',     // Standart çim yeşili
+  grassDark: '#365314',     // Koyu çim gölgesi
+  flowerPetal: '#f43f5e',   // Canlı pembe çiçek
+  flowerCenter: '#fde047',  // Sarı çiçek göbeği
+  dirtLight: '#78350f',     // Sıcak toprak
+  dirtMid: '#5c2a0b',       // Orta toprak
+  dirtDark: '#451a03'       // Derin toprak tabakası
+};
+
+// Görsel 4'ün D89DF2 sağındaki çimen & toprak tonları (Pastel Modu):
 export const GROUND_PALETTE = {
   grassLight: '#9EE78F',    // 9EE78F: Açık çimen yeşili (üst çizgi ve çim püskülleri)
   grassMain: '#58BA5D',     // 58BA5D: Canlı çimen yeşili (ana çimen gövdesi)
@@ -54,13 +66,22 @@ export const GROUND_PALETTE = {
   dirtMid: '#5c2a0b',       // Orta toprak
   dirtDark: '#451a03'       // Derin toprak tabakası
 };
+export const PASTEL_GROUND_PALETTE = GROUND_PALETTE;
 
 export const PaletteManager = {
-  currentId: 4, // Varsayılan olarak Görsel 4 (Coolors)
+  currentId: 1, // Varsayılan olarak Palet 1 (Klasik Canlı)
   toastTimer: 0,
 
+  get isPastel() {
+    return this.currentId === 4;
+  },
+
+  get groundPalette() {
+    return this.isPastel ? PASTEL_GROUND_PALETTE : CLASSIC_GROUND_PALETTE;
+  },
+
   get current() {
-    return PALETTES[this.currentId] || PALETTES[4];
+    return PALETTES[this.currentId] || PALETTES[1];
   },
 
   get rainbow() {
@@ -97,7 +118,8 @@ export const PaletteManager = {
     ctx.save();
     ctx.globalAlpha = alpha;
     const p = this.current;
-    const text = `PALET ${p.id}/4: ${p.shortName}`;
+    const isPastel = p.id === 4;
+    const text = isPastel ? `PALET 4/4: ${p.shortName} (Tüm Oyun Pastel!)` : `PALET ${p.id}/4: ${p.shortName}`;
     ctx.font = '11px "Press Start 2P", monospace';
     const tw = ctx.measureText(text).width;
     const pad = 16;

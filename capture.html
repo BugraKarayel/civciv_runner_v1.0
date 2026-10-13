@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Civciv Runner - Screenshot Generator</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body style="background: #000; margin: 0; padding: 0; overflow: hidden;">
+  <canvas id="gameCanvas" width="960" height="540"></canvas>
+  <script type="module">
+    import { CONFIG } from './js/config.js';
+    import { StateMachine, States } from './js/state.js';
+    import { Player } from './js/player.js';
+    import { World } from './js/world.js';
+    import { ObstacleManager, Obstacle, Seed, Ramp } from './js/obstacles.js';
+    import { Score } from './js/score.js';
+    import { Leaderboard } from './js/leaderboard.js';
+    import { UI } from './js/ui.js';
+    import { Konami } from './js/konami.js';
+    import { PaletteManager } from './js/palette.js';
+    import { SkinManager } from './js/skins.js';
+    import { SPRITES } from './js/sprites.js';
+
+    window.onerror = (msg, url, line, col, err) => {
+      fetch('/error?msg=' + encodeURIComponent(`${msg} at ${line}:${col} ${err ? err.stack : ''}`));
+    };
+
+    function log(msg) {
+      console.log(msg);
+      fetch('/log?msg=' + encodeURIComponent(msg));
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    ctx.imageSmoothingEnabled = false;
+
+    let player = new Player();
+    UI.initNameField();
+    Leaderboard.initAdmin();
+    World.init();
+    ObstacleManager.init();
+
+    // Fontların tam yüklenmesini bekle
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+
+    function setScore(distM, seeds, seedBonus, mult, timeSec) {
+      Score.distance = distM * 10;
+      Score.distPts = distM * mult;
+      Score.seeds = seeds;
+      Score.seedPts = seedBonus;
+      Score.multiplier = mult;
+      Score.time = timeSec * 1000;
+    }
+
+    function render(tick = 20) {
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
+      if (StateMachine.current !== States.IDLE && StateMachine.current !== States.ENTER_NAME) {
+        World.draw(ctx);
+        ObstacleManager.draw(ctx, tick);
+        player.draw(ctx, tick);
+      }
+      UI.draw(ctx, CONFIG.CANVAS_WIDTH, CONFIG.CANVAS_HEIGHT);
+    }
+
+    async function sendScreenshot(filename) {
+      const dataUrl = canvas.toDataURL('image/png');
+      const res = await fetch('/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename, data: dataUrl })
+      });
+      return res.json();
+    }
+
+    async function captureAll() {
+      try {
+        log('Capturing Scene 1: Menu');
+        // SAHNE 1: Menü Ekranı (Yeni Kompakt 2x Vitrin & Gözlüklü Dedektif Seçili)
+        StateMachine.change(States.IDLE);
+        SkinManager.setSkin('detective');
+        PaletteManager.setPalette(1);
+        PaletteManager.toastTimer = 0;
+        render(0);
+        await sendScreenshot('01_menu_detective_skin.png');
+
+        log('Capturing Scene 2: Palette 1 Classic Rainbow');
+        // SAHNE 2: Palet 1 (Klasik Canlı Gökkuşağı - 7 Renk)
+        StateMachine.change(States.RUN);
+        SkinManager.setSkin('classic');
+        PaletteManager.setPalette(1);
+        Konami.active = true;
+        World.init();
+        ObstacleManager.init();
+        player.reset();
+        player.x = 80;
+        player.y = CONFIG.GROUND_Y - player.height;
+        player.isGrounded = true;
+        setScore(210, 6, 90, 1.3, 28);
+        ObstacleManager.obstacles = [
+          new Obstacle(520, 'GROUND_CACTUS')
+        ];
+        ObstacleManager.seeds = [
+          new Seed(360, CONFIG.GROUND_Y - 70, false),
+          new Seed(740, CONFIG.GROUND_Y - 70, false)
+        ];
+        render(35);
+        await sendScreenshot('02_palette1_classic_rainbow.png');
+
+        log('Capturing Scene 3: Palette 2 Pop Rainbow');
+        // SAHNE 3: Palet 2 (Canlı Pop Gökkuşağı - 5 Renk)
+        StateMachine.change(States.RUN);
+        SkinManager.setSkin('classic');
+        PaletteManager.setPalette(2);
+        Konami.active = true;
+        setScore(430, 14, 210, 1.6, 52);
+        ObstacleManager.obstacles = [
+          new Obstacle(480, 'GROUND_ROCK'),
+          new Obstacle(780, 'GROUND_CACTUS')
+        ];
+        ObstacleManager.seeds = [
+          new Seed(480, CONFIG.GROUND_Y - 140, true), // Yüksek tohum
+          new Seed(620, CONFIG.GROUND_Y - 70, false)
+        ];
+        render(55);
+        await sendScreenshot('03_palette2_pop_rainbow.png');
+
+        log('Capturing Scene 4: Palette 3 Neon Rainbow');
+        // SAHNE 4: Palet 3 (Neon Cyber Gökkuşağı - 5 Parlak Neon Renk)
+        StateMachine.change(States.RUN);
+        SkinManager.setSkin('classic');
+        PaletteManager.setPalette(3);
+        Konami.active = true;
+        setScore(710, 25, 420, 1.9, 84);
+        ObstacleManager.ramps = [
+          new Ramp(650)
+        ];
+        ObstacleManager.obstacles = [
+          new Obstacle(420, 'GROUND_CACTUS')
+        ];
+        ObstacleManager.seeds = [
+          new Seed(540, CONFIG.GROUND_Y - 70, false)
+        ];
+        render(75);
+        await sendScreenshot('04_palette3_neon_rainbow.png');
+
+        log('Capturing Scene 5: Palette 4 Pastel Mode');
+        // SAHNE 5: Palet 4 (TAM PASTEL MODU - Pastel Gökyüzü, Pastel Zemin & Gözlüklü Dedektif)
+        StateMachine.change(States.RUN);
+        SkinManager.setSkin('detective'); // Gözlüklü dedektif civciv!
+        PaletteManager.setPalette(4); // Tam pastel modu!
+        Konami.active = true;
+        ObstacleManager.ramps = [];
+        setScore(580, 18, 290, 1.7, 68);
+        ObstacleManager.obstacles = [
+          new Obstacle(560, 'GROUND_CACTUS')
+        ];
+        ObstacleManager.seeds = [
+          new Seed(380, CONFIG.GROUND_Y - 70, false),
+          new Seed(720, CONFIG.GROUND_Y - 140, true)
+        ];
+        render(95);
+        await sendScreenshot('05_palette4_pastel_mode_detective.png');
+
+        log('Capturing Scene 6: Palette 4 Pastel Flight');
+        // SAHNE 6: Gece Uçuş Fazı - Flappy Modu & Milli Takım Civciv (Pastel Gece Gökyüzü)
+        StateMachine.change(States.FLY);
+        SkinManager.setSkin('footballer'); // Milli takım formalı civciv!
+        PaletteManager.setPalette(4); // Pastel gece uçuş modu!
+        World.flyTransition = 1.0;
+        Konami.active = true;
+        player.x = 120;
+        player.y = 200;
+        player.vy = -3;
+        player.rotation = -0.18;
+        player.isGrounded = false;
+        setScore(1120, 36, 620, 2.0, 124);
+        const tower = new Obstacle(560, 'SKY_PIPE');
+        tower.topHeight = 130;
+        tower.bottomY = 300;
+        tower.bottomHeight = 240;
+        ObstacleManager.obstacles = [tower];
+        ObstacleManager.seeds = [
+          new Seed(420, 220, false),
+          new Seed(740, 220, false)
+        ];
+        render(115);
+        await sendScreenshot('06_palette4_pastel_flight_footballer.png');
+
+        log('Capturing Scene 7: Footballer Classic');
+        // SAHNE 7: Türkiye Milli Takımı Civciv Forması & Kramponlarıyla Klasik Dünyada Koşu
+        StateMachine.change(States.RUN);
+        SkinManager.setSkin('footballer');
+        PaletteManager.setPalette(1); // Klasik canlı dünya
+        World.flyTransition = 0;
+        Konami.active = true;
+        player.reset();
+        player.x = 80;
+        player.y = CONFIG.GROUND_Y - player.height;
+        player.isGrounded = true;
+        setScore(350, 12, 180, 1.5, 42);
+        ObstacleManager.obstacles = [
+          new Obstacle(520, 'GROUND_ROCK')
+        ];
+        ObstacleManager.seeds = [
+          new Seed(400, CONFIG.GROUND_Y - 70, false),
+          new Seed(680, CONFIG.GROUND_Y - 140, true)
+        ];
+        render(135);
+        await sendScreenshot('07_footballer_classic_gameplay.png');
+
+        log('All scenes captured, sending done signal...');
+        await fetch('/done');
+        document.body.innerHTML = '<h1 style="color:white;font-family:sans-serif;padding:20px;">Tüm ekran görüntüleri başarıyla kaydedildi!</h1>';
+      } catch (e) {
+        log('Error during capture: ' + e.message);
+        fetch('/error?msg=' + encodeURIComponent(e.message));
+      }
+    }
+
+    // Başlat
+    setTimeout(captureAll, 500);
+  </script>
+</body>
+</html>
