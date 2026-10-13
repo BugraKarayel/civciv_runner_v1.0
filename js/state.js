@@ -11,10 +11,20 @@ export const StateMachine = {
   current: States.IDLE,
   timeInState: 0,
   lastInputTime: 0,
+  paused: false,
   
   change(newState) {
     this.current = newState;
     this.timeInState = 0;
+    this.paused = false;
+  },
+
+  togglePause() {
+    if (this.current === States.RUN || this.current === States.FLY) {
+      this.paused = !this.paused;
+      return this.paused;
+    }
+    return false;
   },
   
   update(dtMs) {

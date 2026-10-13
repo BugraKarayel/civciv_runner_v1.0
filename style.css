@@ -69,436 +69,61 @@ canvas#gameCanvas {
   transform: translateZ(0);
   will-change: transform;
 }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
 
-/* UI Katmanları (Overlay) */
-.overlay-screen {
-  position: absolute;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(8px);
+body {
+  background: #11141a;
+  font-family: 'Press Start 2P', monospace, sans-serif;
+  min-height: 100vh;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  z-index: 20;
-  padding: 24px;
-  transition: opacity 0.25s ease, visibility 0.25s ease;
+  overflow: hidden;
+  color: #333;
 }
 
-.overlay-screen.hidden {
-  display: none;
+#game-container {
+  position: relative;
+  width: 960px;
+  height: 540px;
+  max-width: 100vw;
+  max-height: 100vh;
+  aspect-ratio: 16 / 9;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 4px #2b313d;
+  border-radius: 16px;
+  overflow: hidden;
+  background-color: #70c5ce;
+  transform: translateZ(0);
+  contain: paint;
 }
 
-.overlay-screen.active {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
-
-/* Başlangıç Ekranı */
-.logo-area {
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.badge {
-  display: inline-block;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  margin-bottom: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.game-title {
-  font-family: 'Fredoka', cursive, sans-serif;
-  font-size: 56px;
-  font-weight: 700;
-  color: var(--civciv-yellow);
-  text-shadow: 3px 4px 0px #b26a00, 6px 8px 15px rgba(0,0,0,0.4);
-  letter-spacing: 2px;
-}
-
-.game-title span {
-  color: #fff;
-  text-shadow: 3px 4px 0px var(--gdg-blue), 6px 8px 15px rgba(0,0,0,0.4);
-}
-
-.subtitle {
-  color: #e0e0e0;
-  font-size: 18px;
-  margin-top: 6px;
-  font-weight: 500;
-}
-
-.start-controls {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.how-to-play {
-  text-align: center;
-  color: #b0bec5;
-  font-size: 14px;
-  max-width: 480px;
-}
-
-.key-hint {
-  margin-bottom: 8px;
-}
-
-.key-badge {
-  background: #37474f;
-  color: #ffca28;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-weight: 700;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 11px;
-  border-bottom: 3px solid #263238;
-}
-
-/* Butonlar */
-.gdg-btn {
-  font-family: 'Fredoka', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  padding: 12px 28px;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s, background-color 0.2s;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
-}
-
-.gdg-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(0,0,0,0.4);
-}
-
-.gdg-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-}
-
-.primary-btn {
-  background: linear-gradient(135deg, #4285F4, #1a73e8);
-  color: #ffffff;
-}
-
-.secondary-btn {
-  background: linear-gradient(135deg, #FBBC04, #f59e0b);
-  color: #212529;
-}
-
-.text-btn {
-  background: transparent;
-  color: #78909c;
-  font-size: 13px;
-  padding: 6px 12px;
-  box-shadow: none;
-}
-.text-btn:hover {
-  color: #e53935;
-  box-shadow: none;
-}
-
-.pulse {
-  animation: pulse-anim 1.6s infinite;
-}
-
-@keyframes pulse-anim {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(66, 133, 244, 0.7); }
-  100% { transform: scale(1); }
-}
-
-/* Kart Modalleri */
-.card {
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 28px 36px;
-  box-shadow: var(--shadow);
-  text-align: center;
-  max-width: 520px;
-  width: 90%;
-  animation: modal-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes modal-pop {
-  from { transform: scale(0.85); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.game-over-title {
-  color: var(--gdg-red);
-  font-size: 32px;
-  margin-bottom: 20px;
-  font-weight: 700;
-}
-
-.score-summary {
-  display: flex;
-  justify-content: space-around;
-  background: #f1f5f9;
-  border-radius: 14px;
-  padding: 14px;
-  margin-bottom: 16px;
-}
-
-.summary-box {
-  display: flex;
-  flex-direction: column;
-}
-
-.summary-box .lbl {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-}
-
-.summary-box .val {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1e293b;
-  font-family: 'Press Start 2P', monospace;
-  margin-top: 4px;
-}
-
-.summary-box.highlight .val {
-  color: var(--gdg-green);
-}
-
-.record-badge {
-  background: #dcfce7;
-  color: #15803d;
-  font-weight: 700;
-  padding: 8px 12px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 14px;
-  border: 1px solid #86efac;
-}
-
-.score-form {
-  margin-bottom: 20px;
-  text-align: left;
-}
-
-.score-form label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #475569;
-  display: block;
-  margin-bottom: 8px;
-  text-align: center;
-}
-
-.input-group {
-  display: flex;
-  gap: 8px;
-}
-
-.input-group input {
-  flex: 1;
-  padding: 12px 16px;
-  border: 2px solid #cbd5e1;
-  border-radius: 10px;
-  font-family: 'Fredoka', sans-serif;
-  font-size: 16px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.input-group input:focus {
-  border-color: var(--gdg-blue);
-}
-
-.action-buttons {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
-
-/* Liderlik Tablosu */
-.lb-card {
-  max-width: 580px;
-}
-
-.lb-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 2px solid #e2e8f0;
-  padding-bottom: 12px;
-  margin-bottom: 16px;
-}
-
-.lb-header h2 {
-  font-size: 24px;
-  color: #0f172a;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 32px;
-  line-height: 1;
-  color: #94a3b8;
-  cursor: pointer;
-}
-
-.close-btn:hover {
-  color: #0f172a;
-}
-
-.leaderboard-list-wrapper {
-  max-height: 240px;
-  overflow-y: auto;
-  margin-bottom: 16px;
-}
-
-.lb-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.lb-table th {
-  padding: 8px 12px;
-  font-size: 12px;
-  color: #64748b;
-  text-transform: uppercase;
-  background: #f8fafc;
-}
-
-.lb-table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid #f1f5f9;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.lb-table tr:nth-child(1) td { color: #d97706; font-size: 16px; }
-.lb-table tr:nth-child(2) td { color: #475569; }
-.lb-table tr:nth-child(3) td { color: #b45309; }
-
-.lb-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* HUD (Heads Up Display) */
-.hud-layer {
-  position: absolute;
+/* Mobil sanal klavye için görünmez isim alanı (font-size 16px: iOS'ta otomatik zoom'u engeller) */
+.name-field {
+  position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  padding: 16px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  pointer-events: none;
-  z-index: 10;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  font-size: 16px;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
-.hud-layer.hidden {
-  display: none;
-}
-
-.hud-left {
-  display: flex;
-  gap: 10px;
-}
-
-.hud-badge {
-  background: rgba(20, 12, 4, 0.72);
-  color: #fff;
-  padding: 8px 14px;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: 3px solid #3b2108;
-}
-
-.mode-badge {
-  background: #2563eb;
-}
-
-.mode-badge.sky {
-  background: #dc2626;
-}
-
-.hud-right {
-  display: flex;
-}
-
-.hud-score-box {
-  background: rgba(20, 12, 4, 0.78);
-  padding: 8px 18px;
-  border-radius: 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  border: 3px solid #3b2108;
-}
-
-.hud-label {
-  font-size: 10px;
-  color: #cbd5e1;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
-
-#hudScore {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 20px;
-  color: #ffca28;
-  margin-top: 2px;
-}
-
-#hudScore.flash {
-  color: #ffffff;
-}
-
-/* Mod Değişim Bildirimi */
-.mode-banner {
-  position: absolute;
-  top: 35%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.9);
-  background: #ea580c;
-  color: #fff;
-  padding: 16px 32px;
-  border-radius: 6px;
-  font-size: 26px;
-  font-weight: 700;
-  border: 4px solid #3b2108;
-  box-shadow: 0 6px 0 #3b2108;
-  z-index: 15;
-  pointer-events: none;
-  will-change: transform, opacity;
-  animation: banner-pop 1.8s ease forwards;
-}
-
-.mode-banner.hidden {
-  display: none;
-}
-
-@keyframes banner-pop {
-  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-  15% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-  25% { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
-  80% { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
-  100% { transform: translate(-50%, -65%) scale(0.8); opacity: 0; }
+canvas#gameCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  transform: translateZ(0);
+  will-change: transform;
 }

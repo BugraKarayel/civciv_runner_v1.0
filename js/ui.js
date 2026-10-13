@@ -10,6 +10,7 @@ import { PaletteManager } from './palette.js';
 import { GodMode } from './godmode.js';
 import { SkinManager, SKINS } from './skins.js';
 import { SPRITES, drawSprite } from './sprites.js';
+import { sounds } from './audio.js';
 
 export const UI = {
   nameInputBuffer: "",
@@ -48,6 +49,26 @@ export const UI = {
     }
     PaletteManager.drawToast(ctx, width, height);
     GodMode.drawToast(ctx, width, height);
+    sounds.drawToast(ctx, width, height);
+
+    if (StateMachine.paused) {
+      this.drawPause(ctx, width, height);
+    }
+  },
+
+  drawPause(ctx, w, h) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+    ctx.fillRect(0, 0, w, h);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '22px "Press Start 2P", monospace';
+    ctx.fillStyle = '#fde047';
+    ctx.fillText('OYUN DURAKLATILDI', w / 2, h / 2 - 20);
+    ctx.font = '11px "Press Start 2P", monospace';
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillText('[ESC] veya TIKLA: DEVAM ET', w / 2, h / 2 + 25);
+    ctx.restore();
   },
 
   drawHUD(ctx, w, h) {
@@ -300,9 +321,9 @@ export const UI = {
     ctx.fillStyle = Math.floor(now / 500) % 2 === 0 ? '#ff5555' : 'white';
     ctx.fillText('BAŞLAMAK İÇİN TIKLA VEYA SPACE', w / 2, h - 46);
 
-    ctx.font = '9px "Press Start 2P", monospace';
+    ctx.font = '8px "Press Start 2P", monospace';
     ctx.fillStyle = '#64748b';
-    ctx.fillText('[P / 1-4] PALET (4: Pastel Modu) • [Ctrl+G] GOD MODE • [C] KOSTÜM', w / 2, h - 20);
+    ctx.fillText('[P/1-4] PALET • [C/S] KOSTÜM • [M] SES • [ESC] DURAKLAT • [Ctrl+G] GOD MODE', w / 2, h - 20);
   },
 
   drawTutorial(ctx, w, h) {
@@ -427,11 +448,20 @@ export const UI = {
       ctx.font = '13px "Press Start 2P", monospace';
       ctx.fillStyle = flash ? '#fde047' : '#f59e0b';
       ctx.fillText('* TEBRİKLER! GÜNÜN TOP 10 REKORU! *', w / 2, bottomY);
+    } else if (Score.isNewBest) {
+      const flash = Math.floor(performance.now() / 400) % 2 === 0;
+      ctx.font = '12px "Press Start 2P", monospace';
+      ctx.fillStyle = flash ? '#4ade80' : '#86efac';
+      ctx.fillText('🌟 TEBRİKLER! YENİ KİŞİSEL REKOR! 🌟', w / 2, bottomY);
+    } else if (Score.highScore > 0) {
+      ctx.font = '10px "Press Start 2P", monospace';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('EN İYİ SKORUN: ' + Score.highScore + ' P', w / 2, bottomY);
     }
 
     ctx.font = '12px "Press Start 2P", monospace';
     ctx.fillStyle = Math.floor(performance.now() / 500) % 2 === 0 ? '#ffffff' : '#94a3b8';
-    ctx.fillText('DEVAM ETMEK İÇİN SPACE / TIKLA', w / 2, bottomY + (isTop || GodMode.usedInRun ? 34 : 14));
+    ctx.fillText('DEVAM ETMEK İÇİN SPACE / TIKLA', w / 2, bottomY + (isTop || GodMode.usedInRun || Score.isNewBest || Score.highScore > 0 ? 34 : 14));
   },
 
   drawEnterName(ctx, w, h) {

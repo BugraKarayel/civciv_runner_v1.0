@@ -525,8 +525,5 @@ export const ObstacleManager = {
       }
     }
     this.seeds = reachable;
-  },
-  clearSkyPipes() {
-    this.clearSkyPhase();
   }
 };

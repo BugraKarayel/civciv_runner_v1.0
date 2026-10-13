@@ -9,6 +9,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Runtime & Dependencies
+node_modules/
+__pycache__/
+*.pyc
+
+# Generated screenshots
+screenshots/
+
 # Editor directories
 .vscode/
 .idea/

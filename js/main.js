@@ -47,7 +47,7 @@ canvas.addEventListener('pointerdown', (e) => {
   }
 });
 
-// Kısayollar: Ctrl+G (God Mode), 'P' veya 1-4 (Palet), 'C' / Oklar (Kostüm)
+// Kısayollar: Ctrl+G (God Mode), 'P'/1-4 (Palet), 'C'/'S'/Oklar (Kostüm), 'M' (Ses), 'Esc' (Duraklat)
 window.addEventListener('keydown', (e) => {
   // Ctrl + G / Cmd + G: God Mode Toggle
   if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G')) {
@@ -57,10 +57,25 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
+  // Escape: Duraklat / Devam Et
+  if (e.key === 'Escape') {
+    if (StateMachine.current === States.RUN || StateMachine.current === States.FLY) {
+      StateMachine.togglePause();
+      sounds.init();
+      return;
+    }
+  }
+
+  // M / m: Ses Aç / Kapa (Mute toggle)
+  if (e.key === 'm' || e.key === 'M') {
+    sounds.toggleMute();
+    return;
+  }
+
   if (StateMachine.current === States.ENTER_NAME) return;
 
-  // 'C' tuşu: Her an kostüm değiştir
-  if (e.key === 'c' || e.key === 'C') {
+  // 'C' veya 'S' tuşu: Kostüm değiştir (IDLE veya oyun içi)
+  if (e.key === 'c' || e.key === 'C' || (StateMachine.current === States.IDLE && (e.key === 's' || e.key === 'S'))) {
     SkinManager.nextSkin();
     sounds.init();
     sounds.collectSeed && sounds.collectSeed();
@@ -97,6 +112,7 @@ function resetGame() {
   World.init();
   ObstacleManager.init();
   Score.reset();
+  Score.checkedThisRun = false;
   GodMode.resetRun();
   tick = 0;
   flyTimer = 0;
@@ -122,6 +138,17 @@ function triggerFly() {
 }
 
 function step(dt, now) {
+  sounds.update(dt * (1000/60));
+
+  if (StateMachine.paused) {
+    if (Input.actionJustPressed) {
+      StateMachine.togglePause();
+      sounds.init();
+    }
+    Input.update();
+    return;
+  }
+
   tick += dt;
   StateMachine.update(dt * (1000/60)); // ms
   PaletteManager.update(dt * (1000/60));
@@ -183,6 +210,10 @@ function step(dt, now) {
   }
   // --- GAMEOVER ---
   else if (StateMachine.current === States.GAMEOVER) {
+    if (!Score.checkedThisRun) {
+      Score.checkedThisRun = true;
+      Score.checkHighScore(!GodMode.usedInRun);
+    }
     player.update(dt);
     if (StateMachine.timeInState > CONFIG.GAMEOVER_LOCK) {
       if (Input.actionJustPressed) {

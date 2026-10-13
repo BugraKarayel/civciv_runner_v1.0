@@ -6,10 +6,10 @@ import { spawn } from 'child_process';
 const PORT = 8124;
 const ROOT_DIR = process.cwd();
 const SCREENSHOTS_DIR = path.join(ROOT_DIR, 'screenshots');
-const ARTIFACT_DIR = 'C:\\Users\\karay\\.gemini\\antigravity\\brain\\9e821353-aef6-4119-80dd-7b8aa6106d53';
+const ARTIFACT_DIR = process.env.ARTIFACT_DIR || null;
 
 if (!fs.existsSync(SCREENSHOTS_DIR)) fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
-if (!fs.existsSync(ARTIFACT_DIR)) fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
+if (ARTIFACT_DIR && !fs.existsSync(ARTIFACT_DIR)) fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -37,8 +37,10 @@ const server = http.createServer((req, res) => {
         const localPath = path.join(SCREENSHOTS_DIR, filename);
         fs.writeFileSync(localPath, buffer);
 
-        const artifactPath = path.join(ARTIFACT_DIR, filename);
-        fs.writeFileSync(artifactPath, buffer);
+        if (ARTIFACT_DIR) {
+          const artifactPath = path.join(ARTIFACT_DIR, filename);
+          fs.writeFileSync(artifactPath, buffer);
+        }
 
         console.log(`[SAVED] ${filename} (${buffer.length} bytes)`);
         res.writeHead(200, { 'Content-Type': 'application/json' });

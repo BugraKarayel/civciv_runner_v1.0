@@ -9,6 +9,33 @@ export const Score = {
   multiplier: 1,
   distPts: 0,
   seedPts: 0,
+  highScore: 0,
+  isNewBest: false,
+
+  initHighScore() {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const saved = parseInt(localStorage.getItem('civciv_personal_best') || '0', 10);
+        if (!isNaN(saved) && saved > 0) this.highScore = saved;
+      }
+    } catch (e) {}
+  },
+
+  checkHighScore(allowSave = true) {
+    if (!allowSave) return false;
+    const current = this.value;
+    if (current > this.highScore && current > 0) {
+      this.highScore = current;
+      this.isNewBest = true;
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('civciv_personal_best', String(this.highScore));
+        }
+      } catch (e) {}
+      return true;
+    }
+    return false;
+  },
 
   get meters() {
     return Math.floor(this.distance / 10);
@@ -37,6 +64,7 @@ export const Score = {
     this.multiplier = 1;
     this.distPts = 0;
     this.seedPts = 0;
+    this.isNewBest = false;
   },
 
   setSpeed(speed) {
@@ -67,3 +95,5 @@ export const Score = {
     return String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
   }
 };
+
+Score.initHighScore();

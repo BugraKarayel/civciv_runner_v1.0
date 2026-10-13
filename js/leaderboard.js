@@ -101,11 +101,25 @@ export const Leaderboard = {
             }
           }
         } else if (action === '3') {
+          const csvContent = "isim,skor,tarih\n" + list.map(r => `${r.name},${r.score},${r.date}`).join("\n");
           console.log("=== JSON ===");
           console.log(JSON.stringify(list, null, 2));
           console.log("=== CSV ===");
-          console.log("isim,skor,tarih\n" + list.map(r => `${r.name},${r.score},${r.date}`).join("\n"));
-          alert('Kayıtlar tarayıcı konsoluna yazdırıldı (F12 ile açabilirsiniz).');
+          console.log(csvContent);
+          try {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `civciv_skorlar_${todayLocal()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert('CSV dosyası indirildi ve kayıtlar tarayıcı konsoluna (F12) yazdırıldı.');
+          } catch (err) {
+            alert('Kayıtlar tarayıcı konsoluna yazdırıldı (F12 ile açabilirsiniz).');
+          }
         }
         
         // Tuş durumlarını temizle ki tekrar tekrar tetiklenmesin

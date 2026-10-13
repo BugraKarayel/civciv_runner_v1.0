@@ -7,6 +7,7 @@ import { World } from './world.js';
 import { Konami } from './konami.js';
 import { PaletteManager } from './palette.js';
 import { GodMode } from './godmode.js';
+import { Input } from './input.js';
 
 export class Player {
   constructor() {
@@ -87,7 +88,8 @@ export class Player {
     }
 
     if (StateMachine.current === States.RUN || StateMachine.current === States.GAMEOVER || StateMachine.current === States.TUTORIAL) {
-      this.vy += CONFIG.GRAVITY_RUN * dt;
+      const gravityMult = (!this.isGrounded && Input.fastFallPressed && StateMachine.current !== States.GAMEOVER) ? 2.4 : 1;
+      this.vy += CONFIG.GRAVITY_RUN * gravityMult * dt;
       this.y += this.vy * dt;
 
       // Rampadan sonra zemin biter! Rampayı atlayan boşluğa düşer.

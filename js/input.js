@@ -4,6 +4,7 @@ import { Konami } from './konami.js';
 export const Input = {
   actionPressed: false,
   actionJustPressed: false,
+  fastFallPressed: false,
   keys: {},
   
   init() {
@@ -27,6 +28,8 @@ export const Input = {
       } else if (e.code === 'ArrowUp') {
         // Menüde ↑ oyunu başlatmaz (Konami kodu girilebilsin)
         if (StateMachine.current !== States.IDLE) handleDown();
+      } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+        this.fastFallPressed = true;
       }
     });
     
@@ -34,6 +37,8 @@ export const Input = {
       this.keys[e.key] = false;
       if (e.code === 'Space' || e.code === 'ArrowUp') {
         handleUp();
+      } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+        this.fastFallPressed = false;
       }
     });
 
