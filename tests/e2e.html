@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>E2E Test Runner</title>
+</head>
+<body style="background:#111; color:#eee; font-family:sans-serif;">
+  <canvas id="gameCanvas" width="960" height="540" style="display:none;"></canvas>
+  <div id="results">Testler başlatılıyor...</div>
+
+  <script type="module">
+    const resultsDiv = document.getElementById('results');
+    const logs = [];
+
+    function log(msg, status = 'PASS') {
+      logs.push({ msg, status });
+      const p = document.createElement('div');
+      p.textContent = `[${status}] ${msg}`;
+      p.style.color = status === 'PASS' ? '#4ade80' : '#f87171';
+      resultsDiv.appendChild(p);
+      fetch('/log?msg=' + encodeURIComponent(`[${status}] ${msg}`)).catch(() => {});
+    }
+
+    try {
+      // 1. Modül Yükleme Kontrolü
+      const { CONFIG } = await import('../js/config.js');
+      const { StateMachine, States } = await import('../js/state.js');
+      const { SoundManager, sounds } = await import('../js/audio.js');
+      const { SkinManager, SKINS } = await import('../js/skins.js');
+      const { PaletteManager, PALETTES } = await import('../js/palette.js');
+      const { Score } = await import('../js/score.js');
+      const { Player } = await import('../js/player.js');
+      const { World } = await import('../js/world.js');
+      const { ObstacleManager } = await import('../js/obstacles.js');
+      const { UI } = await import('../js/ui.js');
+      const { GodMode } = await import('../js/godmode.js');
+
+      log('Tüm ES modülleri tarayıcıda başarıyla yüklendi.');
+
+      // 2. Canvas & Render Kontrolü
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('2D Canvas Context oluşturulamadı!');
+      log('Canvas 2D render motoru hazır (960x540).');
+
+      // 3. IDLE Menüsü Çizim Testi
+      StateMachine.change(States.IDLE);
+      UI.draw(ctx, 960, 540);
+      log('IDLE başlangıç menüsü ve kostüm vitrini hatasız çizildi.');
+
+      // 4. Kostüm Vitrin Tıklama Testi
+      SkinManager.setSkin('classic');
+      const clickDetective = UI.handleSkinClick(600, 310); // Dedektif kartı koordinatı
+      if (!clickDetective || SkinManager.current !== 'detective') {
+        throw new Error('Vitrin kartına tıklama Dedektif kostümünü seçemedi!');
+      }
+      log('Fare ile Dedektif kostümü seçimi başarılı (detective).');
+
+      const clickFootballer = UI.handleSkinClick(600, 360); // Futbolcu kartı koordinatı
+      if (!clickFootballer || SkinManager.current !== 'footballer') {
+        throw new Error('Vitrin kartına tıklama Futbolcu kostümünü seçemedi!');
+      }
+      log('Fare ile Milli Takım kostümü seçimi başarılı (footballer).');
+
+      // 5. Ses Mute / Unmute Testi
+      sounds.init();
+      const mute1 = sounds.toggleMute();
+      if (!mute1 || !sounds.muted) throw new Error('toggleMute() sesi kapatamadı!');
+      sounds.drawToast(ctx, 960, 540);
+      log('Ses kapatma (Mute) ve toast bildirimi hatasız çalıştı.');
+
+      const mute2 = sounds.toggleMute();
+      if (mute2 || sounds.muted) throw new Error('toggleMute() sesi tekrar açamadı!');
+      log('Ses tekrar açma (Unmute) hatasız çalıştı.');
+
+      // 6. Palet Döngüsü ve Pastel Modu Testi
+      PaletteManager.setPalette(1);
+      if (PaletteManager.isPastel) throw new Error('Palet 1 yanlışlıkla pastel algılandı!');
+      PaletteManager.setPalette(4);
+      if (!PaletteManager.isPastel) throw new Error('Palet 4 pastel modunu tetiklemedi!');
+      PaletteManager.drawToast(ctx, 960, 540);
+      log('Palet 4 Tam Pastel Modu ve toast bildirimi hatasız çalıştı.');
+
+      // 7. Oyun Döngüsü & State Geçişleri (IDLE -> TUTORIAL -> RUN)
+      World.init();
+      ObstacleManager.init();
+      Score.reset();
+      const player = new Player();
+
+      StateMachine.change(States.RUN);
+      if (StateMachine.current !== States.RUN) throw new Error('RUN durumuna geçilemedi!');
+      log('Oyun başarıyla başladı (RUN durumu aktif).');
+
+      // 8. Zıplama & Çift Zıplama Testi
+      player.jump(); // 1. Zıplama
+      if (player.isGrounded || player.vy >= 0) throw new Error('1. zıplama uygulanamadı!');
+      player.jump(); // 2. Zıplama (Double jump)
+      if (player.jumpsRemaining !== 0) throw new Error('Double jump jumpsRemaining sıfırlamadı!');
+      log('Havada Çift Zıplama (Double Jump) mekaniği başarıyla çalıştı.');
+
+      // 9. Duraklatma (Pause) Testi
+      const paused = StateMachine.togglePause();
+      if (!paused || !StateMachine.paused) throw new Error('togglePause() oyunu duraklatamadı!');
+      UI.draw(ctx, 960, 540);
+      log('Oyun içi Duraklatma (Pause Screen) başarıyla çizildi.');
+      StateMachine.togglePause(); // Unpause
+
+      // 10. Tohum Toplama & Skor Testi
+      Score.addDistance(1000);
+      Score.addSeed(false);
+      Score.addSeed(true); // High seed (+25)
+      if (Score.seeds !== 2) throw new Error('Tohum sayacı hatalı!');
+      if (Score.value <= 0) throw new Error('Net skor hesaplanamadı!');
+      log(`Skor hesaplama başarılı: ${Score.value} net puan, ${Score.seeds} tohum.`);
+
+      // 11. Kişisel Rekor (Personal Best) Testi
+      Score.distPts = 3000;
+      const isRecord = Score.checkHighScore(true);
+      if (!isRecord || Score.highScore !== Score.value) throw new Error('Kişisel rekor güncellenemedi!');
+      log(`Yeni kişisel rekor başarıyla kaydedildi: ${Score.highScore} puan.`);
+
+      // 12. Game Over & Rekor Gösterim Çizimi Testi
+      StateMachine.change(States.GAMEOVER);
+      UI.draw(ctx, 960, 540);
+      log('Game Over ekranı ve rekor paneli hatasız çizildi.');
+
+      // Sonuç Bildirimi
+      fetch('/finish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ success: true, count: logs.length, logs })
+      }).catch(() => {});
+
+    } catch (err) {
+      log(err.message, 'FAIL');
+      fetch('/finish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ success: false, error: err.message, logs })
+      }).catch(() => {});
+    }
+  </script>
+</body>
+</html>
